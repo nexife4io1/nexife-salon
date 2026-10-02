@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+/*
+ * Nexife design tokens — "quiet luxury".
+ * Source of truth: Materials/DESIGN.md + Materials/code.html (Branches mockup).
+ *
+ * Usage examples:
+ *   bg-surface  text-on-surface  text-secondary  bg-primary-container
+ *   font-headline  text-headline-lg  text-label-md  rounded-card  shadow-card
+ */
+@theme {
+  /* Surfaces (tonal layers) */
+  --color-background: #fbf9f8;
+  --color-surface: #fbf9f8;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f5f3f3;
+  --color-surface-container: #efeded;
+  --color-surface-container-high: #e9e8e7;
+  --color-surface-container-highest: #e4e2e2;
+  --color-on-surface: #1b1c1c;
+  --color-on-surface-variant: #4d463a;
+  --color-inverse-surface: #303031;
+  --color-inverse-on-surface: #f2f0f0;
+  --color-outline: #7f7668;
+  --color-outline-variant: #d0c5b5;
+
+  /* Champagne gold — primary signal, high-intent actions, AI */
+  --color-primary: #735b24;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #c8a96a;
+  --color-on-primary-container: #533d07;
+  --color-primary-fixed: #ffdf9f;
+  --color-primary-fixed-dim: #e3c281;
+
+  /* Charcoal neutrals */
+  --color-secondary: #5f5e5e;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #e4e2e1;
+  --color-on-secondary-container: #656464;
+
+  /* Semantic — desaturated, deep-toned */
+  --color-success-container: #d3f5d6;
+  --color-on-success-container: #0c3b12;
+  --color-warning-container: #f6e7c8;
+  --color-on-warning-container: #5a3f05;
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  /* Typography: Manrope for headlines/metrics, Plus Jakarta Sans for UI */
+  --font-headline: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --text-display-lg: 3rem;
+  --text-display-lg--line-height: 3.5rem;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-lg--font-weight: 700;
+  --text-headline-lg: 2rem;
+  --text-headline-lg--line-height: 2.5rem;
+  --text-headline-lg--letter-spacing: -0.01em;
+  --text-headline-lg--font-weight: 600;
+  --text-headline-md: 1.5rem;
+  --text-headline-md--line-height: 2rem;
+  --text-headline-md--font-weight: 600;
+  --text-headline-sm: 1.125rem;
+  --text-headline-sm--line-height: 1.625rem;
+  --text-headline-sm--font-weight: 600;
+  --text-body-lg: 1.125rem;
+  --text-body-lg--line-height: 1.75rem;
+  --text-body-md: 1rem;
+  --text-body-md--line-height: 1.5rem;
+  --text-body-sm: 0.875rem;
+  --text-body-sm--line-height: 1.25rem;
+  --text-label-md: 0.75rem;
+  --text-label-md--line-height: 1rem;
+  --text-label-md--letter-spacing: 0.05em;
+  --text-label-md--font-weight: 600;
+  --text-label-sm: 0.6875rem;
+  --text-label-sm--line-height: 0.875rem;
+  --text-label-sm--font-weight: 500;
+
+  /* Shape: large, friendly radii */
+  --radius-card: 1.5rem;
+  --radius-control: 1rem;
+  --radius-smart: 1.75rem; /* AI "smart blocks" — slightly more organic than cards */
+
+  /* Elevation: ambient shadows */
+  --shadow-card: 0 4px 20px 0 rgb(27 28 28 / 0.04);
+  --shadow-raised: 0 12px 32px -8px rgb(27 28 28 / 0.12);
+
+  /* Layout */
+  --spacing-gutter: 1.5rem;
+  --spacing-page: 2.5rem;
+  --spacing-sidebar: 16rem;
+  --spacing-topbar: 4rem;
+  --container-content: 90rem;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background font-sans text-body-md text-on-surface;
+  }
+
+  ::selection {
+    background-color: var(--color-primary-fixed);
+    color: var(--color-on-surface);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary-container);
+    outline-offset: 2px;
+  }
+}
+
+@utility eyebrow {
+  /* Magazine-style uppercase label */
+  font-size: var(--text-label-md);
+  line-height: var(--text-label-md--line-height);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-secondary);
+}
