@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Plus_Jakarta_Sans } from "next/font/google";
+import { QueryProvider } from "@/components/providers/query-provider";
 import "./globals.css";
 
 const manrope = Manrope({ subsets: ["latin"], weight: ["400", "600", "700"], variable: "--font-manrope", display: "swap" });
@@ -17,7 +18,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${manrope.variable} ${jakarta.variable}`}>
-      <body className="min-h-screen">{children}</body>
+      <body className="min-h-screen">
+        <QueryProvider>{children}</QueryProvider>
+      </body>
     </html>
   );
 }

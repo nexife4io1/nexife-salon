@@ -5,11 +5,48 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSection } from "@/components/ui/page-section";
 import { StatTile } from "@/components/ui/stat-tile";
-import { TableShell } from "@/components/ui/table-shell";
+import { TableShell, type TableColumn } from "@/components/ui/table-shell";
 import { PlaceholderNote } from "@/components/views/shared/placeholder-note";
 import { getInventory } from "@/server/inventory/queries";
 
 export const metadata: Metadata = { title: "Inventory" };
+
+type InventoryRow = Awaited<ReturnType<typeof getInventory>>["items"][number];
+
+const INVENTORY_COLUMNS: TableColumn<InventoryRow>[] = [
+  {
+    key: "name",
+    header: "Item",
+    cellClassName: "font-semibold text-on-surface",
+    renderCell: (item) => item.name,
+  },
+  {
+    key: "sku",
+    header: "SKU",
+    cellClassName: "text-secondary",
+    renderCell: (item) => item.sku ?? "-",
+  },
+  {
+    key: "onHand",
+    header: "On hand",
+    renderCell: (item) => (
+      <>
+        {item.onHand} {item.unit}
+      </>
+    ),
+  },
+  {
+    key: "reorderLevel",
+    header: "Reorder at",
+    cellClassName: "text-secondary",
+    renderCell: (item) => item.reorderLevel,
+  },
+  {
+    key: "status",
+    header: "Status",
+    renderCell: (item) => (item.onHand <= item.reorderLevel ? <Badge tone="warning">Reorder</Badge> : <Badge tone="success">In stock</Badge>),
+  },
+];
 
 export default async function InventoryPage() {
   const { items, lowStock } = await getInventory();
@@ -35,20 +72,7 @@ export default async function InventoryPage() {
       </div>
 
       <PageSection title="Stock on hand">
-        <TableShell columns={["Item", "SKU", "On hand", "Reorder at", "Status"]} empty={<EmptyState icon="package" title="No items yet" />}>
-          {items.length > 0 &&
-            items.map((i) => (
-              <tr key={i.id}>
-                <td className="px-6 py-4 font-semibold text-on-surface">{i.name}</td>
-                <td className="px-6 py-4 text-secondary">{i.sku ?? "—"}</td>
-                <td className="px-6 py-4">
-                  {i.onHand} {i.unit}
-                </td>
-                <td className="px-6 py-4 text-secondary">{i.reorderLevel}</td>
-                <td className="px-6 py-4">{i.onHand <= i.reorderLevel ? <Badge tone="warning">Reorder</Badge> : <Badge tone="success">In stock</Badge>}</td>
-              </tr>
-            ))}
-        </TableShell>
+        <TableShell columns={INVENTORY_COLUMNS} rows={items} rowKey={(item) => item.id} empty={<EmptyState icon="package" title="No items yet" />} />
       </PageSection>
     </>
   );

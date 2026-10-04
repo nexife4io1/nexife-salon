@@ -6,13 +6,42 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSection } from "@/components/ui/page-section";
-import { TableShell } from "@/components/ui/table-shell";
+import { TableShell, type TableColumn } from "@/components/ui/table-shell";
 import { PlaceholderNote } from "@/components/views/shared/placeholder-note";
 import { formatMoney } from "@/lib/format";
 import { getStaffDirectory } from "@/server/staff/queries";
 import { getCurrentTenant } from "@/server/tenants/queries";
 
 export const metadata: Metadata = { title: "Staff & Services" };
+
+type ServiceRow = Awaited<ReturnType<typeof getStaffDirectory>>["services"][number];
+
+function serviceColumns(currency: string): TableColumn<ServiceRow>[] {
+  return [
+    {
+      key: "name",
+      header: "Service",
+      cellClassName: "font-semibold text-on-surface",
+      renderCell: (service) => service.name,
+    },
+    {
+      key: "category",
+      header: "Category",
+      renderCell: (service) => (service.category ? <Badge>{service.category}</Badge> : "-"),
+    },
+    {
+      key: "duration",
+      header: "Duration",
+      cellClassName: "text-secondary",
+      renderCell: (service) => `${service.durationMinutes} min`,
+    },
+    {
+      key: "price",
+      header: "Price",
+      renderCell: (service) => formatMoney(service.priceCents, currency),
+    },
+  ];
+}
 
 export default async function StaffPage() {
   const [{ staff, services }, tenant] = await Promise.all([getStaffDirectory(), getCurrentTenant()]);
@@ -54,17 +83,7 @@ export default async function StaffPage() {
       </PageSection>
 
       <PageSection title="Service menu">
-        <TableShell columns={["Service", "Category", "Duration", "Price"]} empty={<EmptyState title="No services yet" />}>
-          {services.length > 0 &&
-            services.map((s) => (
-              <tr key={s.id}>
-                <td className="px-6 py-4 font-semibold text-on-surface">{s.name}</td>
-                <td className="px-6 py-4">{s.category ? <Badge>{s.category}</Badge> : "—"}</td>
-                <td className="px-6 py-4 text-secondary">{s.durationMinutes} min</td>
-                <td className="px-6 py-4">{formatMoney(s.priceCents, currency)}</td>
-              </tr>
-            ))}
-        </TableShell>
+        <TableShell columns={serviceColumns(currency)} rows={services} rowKey={(service) => service.id} empty={<EmptyState title="No services yet" />} />
       </PageSection>
     </>
   );

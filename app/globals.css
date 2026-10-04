@@ -117,6 +117,36 @@
   }
 }
 
+@keyframes barber-shear {
+  0% {
+    transform: translateX(0) rotate(-14deg);
+  }
+  32% {
+    transform: translateX(5.5rem) rotate(9deg);
+  }
+  68% {
+    transform: translateX(11rem) rotate(-10deg);
+  }
+  100% {
+    transform: translateX(16rem) rotate(6deg);
+  }
+}
+
+@keyframes barber-strand {
+  0% {
+    width: 2.5rem;
+    opacity: 0.35;
+  }
+  50% {
+    width: 9rem;
+    opacity: 0.95;
+  }
+  100% {
+    width: 16rem;
+    opacity: 0.45;
+  }
+}
+
 @utility eyebrow {
   /* Magazine-style uppercase label */
   font-size: var(--text-label-md);

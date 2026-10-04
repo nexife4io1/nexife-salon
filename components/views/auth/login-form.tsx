@@ -3,10 +3,12 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
-import { loginAction } from "@/server/auth/actions";
+import type { LoginState } from "@/server/auth/schema";
 
-export function LoginForm({ defaultUsername }: { defaultUsername?: string }) {
-  const [state, formAction, pending] = useActionState(loginAction, undefined);
+type LoginFormAction = (prev: LoginState, formData: FormData) => Promise<LoginState>;
+
+export function LoginForm({ defaultUsername, action }: { defaultUsername?: string; action: LoginFormAction }) {
+  const [state, formAction, pending] = useActionState(action, undefined);
 
   return (
     <form action={formAction} className="flex flex-col gap-5" noValidate>

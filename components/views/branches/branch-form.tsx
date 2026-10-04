@@ -3,10 +3,12 @@
 import { useActionState } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
-import { createBranchAction } from "@/server/branches/actions";
+import type { ActionResult } from "@/server/shared/result";
 
-export function BranchForm() {
-  const [state, formAction, pending] = useActionState(createBranchAction, undefined);
+type BranchFormAction = (prev: ActionResult | undefined, formData: FormData) => Promise<ActionResult>;
+
+export function BranchForm({ action }: { action: BranchFormAction }) {
+  const [state, formAction, pending] = useActionState(action, undefined);
   const fieldErrors = state && !state.ok ? state.error.fieldErrors : undefined;
 
   return (
