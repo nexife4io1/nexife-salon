@@ -1,7 +1,6 @@
 import { Avatar } from "@/components/ui/avatar";
 import { Icon } from "@/components/ui/icon";
 import { SearchField } from "@/components/ui/search-field";
-import { logoutAction } from "@/server/auth/actions";
 import { MobileNavToggle } from "./mobile-nav-toggle";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -12,7 +11,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 /** Glassy fixed top bar (mockup TopAppBar): search pill, quiet icons, profile. */
-export function Topbar({ userName, role }: { userName: string; role: string }) {
+export function Topbar({ userName, role, signOutAction }: { userName: string; role: string; signOutAction: () => Promise<void> }) {
   return (
     <header className="fixed top-0 right-0 left-0 z-30 flex h-topbar items-center justify-between gap-4 bg-surface/80 px-4 shadow-sm backdrop-blur-md md:px-page lg:left-sidebar">
       <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -38,7 +37,7 @@ export function Topbar({ userName, role }: { userName: string; role: string }) {
             <p className="text-label-md text-on-surface">{userName}</p>
             <p className="text-label-sm text-secondary">{ROLE_LABELS[role] ?? role}</p>
           </div>
-          <form action={logoutAction}>
+          <form action={signOutAction}>
             <button type="submit" className="rounded-full p-1.5 text-secondary transition-colors hover:text-primary" aria-label="Sign out" title="Sign out">
               <Icon name="logout" size={18} />
             </button>

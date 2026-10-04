@@ -2,6 +2,9 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 
+export const MOBILE_NAV_PANEL_ID = "primary-navigation-panel";
+export const MOBILE_NAV_TOGGLE_ID = "primary-navigation-toggle";
+
 /** UI-only shell state (mobile nav drawer). No domain data lives in client context. */
 type ShellState = { navOpen: boolean; setNavOpen: (open: boolean) => void };
 

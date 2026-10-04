@@ -4,6 +4,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { BranchForm } from "@/components/views/branches/branch-form";
+import { createBranchAction } from "@/server/branches/actions";
 import { getBranchesOverview } from "@/server/branches/queries";
 
 export const metadata: Metadata = { title: "Add branch" };
@@ -23,7 +24,7 @@ export default async function NewBranchPage() {
           title="Location details"
           description={source === "demo" ? "Demo mode is read-only — set DATABASE_URL to save branches." : undefined}
         />
-        <BranchForm />
+        <BranchForm action={createBranchAction} />
       </Card>
     </div>
   );

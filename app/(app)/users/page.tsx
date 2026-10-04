@@ -4,11 +4,43 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
-import { TableShell } from "@/components/ui/table-shell";
+import { TableShell, type TableColumn } from "@/components/ui/table-shell";
 import { PlaceholderNote } from "@/components/views/shared/placeholder-note";
 import { getTenantUsers } from "@/server/tenants/queries";
 
 export const metadata: Metadata = { title: "Users & Access" };
+
+type TenantUserRow = Awaited<ReturnType<typeof getTenantUsers>>[number];
+
+const USER_COLUMNS: TableColumn<TenantUserRow>[] = [
+  {
+    key: "name",
+    header: "User",
+    renderCell: (user) => (
+      <span className="flex items-center gap-3">
+        <Avatar name={user.name} size="sm" />
+        <span className="font-semibold text-on-surface">{user.name}</span>
+      </span>
+    ),
+  },
+  {
+    key: "username",
+    header: "Username",
+    cellClassName: "text-secondary",
+    renderCell: (user) => <code>{user.username}</code>,
+  },
+  {
+    key: "role",
+    header: "Role",
+    renderCell: (user) => <Badge tone={user.role === "owner" ? "gold" : "neutral"}>{user.role}</Badge>,
+  },
+  {
+    key: "access",
+    header: "Access",
+    cellClassName: "text-secondary",
+    renderCell: (user) => (user.menus.length ? `${user.menus.length} areas` : "Role defaults"),
+  },
+];
 
 export default async function UsersPage() {
   const users = await getTenantUsers();
@@ -28,26 +60,7 @@ export default async function UsersPage() {
         Invite users, assign roles and menu grants (server/shared/rbac.ts), reset passwords.
       </PlaceholderNote>
 
-      <TableShell columns={["User", "Username", "Role", "Access"]} empty={<EmptyState icon="shield" title="No users" />}>
-        {users.length > 0 &&
-          users.map((u) => (
-            <tr key={u.id}>
-              <td className="px-6 py-4">
-                <span className="flex items-center gap-3">
-                  <Avatar name={u.name} size="sm" />
-                  <span className="font-semibold text-on-surface">{u.name}</span>
-                </span>
-              </td>
-              <td className="px-6 py-4 text-secondary">
-                <code>{u.username}</code>
-              </td>
-              <td className="px-6 py-4">
-                <Badge tone={u.role === "owner" ? "gold" : "neutral"}>{u.role}</Badge>
-              </td>
-              <td className="px-6 py-4 text-secondary">{u.menus.length ? `${u.menus.length} areas` : "Role defaults"}</td>
-            </tr>
-          ))}
-      </TableShell>
+      <TableShell columns={USER_COLUMNS} rows={users} rowKey={(user) => user.id} empty={<EmptyState icon="shield" title="No users" />} />
     </>
   );
 }

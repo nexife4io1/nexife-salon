@@ -5,13 +5,48 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSection } from "@/components/ui/page-section";
 import { StatTile } from "@/components/ui/stat-tile";
-import { TableShell } from "@/components/ui/table-shell";
+import { TableShell, type TableColumn } from "@/components/ui/table-shell";
 import { PlaceholderNote } from "@/components/views/shared/placeholder-note";
 import { formatMoney } from "@/lib/format";
 import { getFinanceSummary } from "@/server/finance/queries";
 import { getCurrentTenant } from "@/server/tenants/queries";
 
 export const metadata: Metadata = { title: "Finance" };
+
+type FinanceEntryRow = Awaited<ReturnType<typeof getFinanceSummary>>["entries"][number];
+
+function financeColumns(currency: string): TableColumn<FinanceEntryRow>[] {
+  return [
+    {
+      key: "occurredOn",
+      header: "Date",
+      cellClassName: "text-secondary",
+      renderCell: (entry) => entry.occurredOn,
+    },
+    {
+      key: "type",
+      header: "Type",
+      renderCell: (entry) => <Badge tone={entry.type === "income" ? "success" : "neutral"}>{entry.type}</Badge>,
+    },
+    {
+      key: "category",
+      header: "Category",
+      renderCell: (entry) => entry.category,
+    },
+    {
+      key: "amountCents",
+      header: "Amount",
+      cellClassName: "font-semibold text-on-surface",
+      renderCell: (entry) => formatMoney(entry.amountCents, currency),
+    },
+    {
+      key: "note",
+      header: "Note",
+      cellClassName: "text-secondary",
+      renderCell: (entry) => entry.note ?? "-",
+    },
+  ];
+}
 
 export default async function FinancePage() {
   const [summary, tenant] = await Promise.all([getFinanceSummary(), getCurrentTenant()]);
@@ -39,20 +74,12 @@ export default async function FinancePage() {
       </div>
 
       <PageSection title="Entries this month">
-        <TableShell columns={["Date", "Type", "Category", "Amount", "Note"]} empty={<EmptyState icon="chart" title="No entries this month" />}>
-          {summary.entries.length > 0 &&
-            summary.entries.map((e) => (
-              <tr key={e.id}>
-                <td className="px-6 py-4 text-secondary">{e.occurredOn}</td>
-                <td className="px-6 py-4">
-                  <Badge tone={e.type === "income" ? "success" : "neutral"}>{e.type}</Badge>
-                </td>
-                <td className="px-6 py-4">{e.category}</td>
-                <td className="px-6 py-4 font-semibold text-on-surface">{formatMoney(e.amountCents, currency)}</td>
-                <td className="px-6 py-4 text-secondary">{e.note ?? "—"}</td>
-              </tr>
-            ))}
-        </TableShell>
+        <TableShell
+          columns={financeColumns(currency)}
+          rows={summary.entries}
+          rowKey={(entry) => entry.id}
+          empty={<EmptyState icon="chart" title="No entries this month" />}
+        />
       </PageSection>
     </>
   );

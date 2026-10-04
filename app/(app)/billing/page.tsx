@@ -4,7 +4,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSection } from "@/components/ui/page-section";
 import { StatTile } from "@/components/ui/stat-tile";
-import { TableShell } from "@/components/ui/table-shell";
+import { TableShell, type TableColumn } from "@/components/ui/table-shell";
 import { PlaceholderNote } from "@/components/views/shared/placeholder-note";
 import { formatMoney } from "@/lib/format";
 import { getBillingOverview } from "@/server/billing/queries";
@@ -13,6 +13,36 @@ import { getCurrentTenant } from "@/server/tenants/queries";
 export const metadata: Metadata = { title: "Billing" };
 
 const dateFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+type PaymentRow = Awaited<ReturnType<typeof getBillingOverview>>["recent"][number];
+
+function paymentColumns(currency: string): TableColumn<PaymentRow>[] {
+  return [
+    {
+      key: "paidAt",
+      header: "When",
+      cellClassName: "text-secondary",
+      renderCell: (payment) => dateFmt.format(payment.paidAt),
+    },
+    {
+      key: "amount",
+      header: "Amount",
+      cellClassName: "font-semibold text-on-surface",
+      renderCell: (payment) => formatMoney(payment.amountCents, currency),
+    },
+    {
+      key: "method",
+      header: "Method",
+      renderCell: (payment) => <Badge>{payment.method.toUpperCase()}</Badge>,
+    },
+    {
+      key: "appointment",
+      header: "Appointment",
+      cellClassName: "text-secondary",
+      renderCell: (payment) => (payment.appointmentId ? "Linked" : "-"),
+    },
+  ];
+}
 
 export default async function BillingPage() {
   const [{ recent, revenueTodayCents }, tenant] = await Promise.all([getBillingOverview(), getCurrentTenant()]);
@@ -33,21 +63,11 @@ export default async function BillingPage() {
 
       <PageSection title="Recent payments">
         <TableShell
-          columns={["When", "Amount", "Method", "Appointment"]}
+          columns={paymentColumns(currency)}
+          rows={recent}
+          rowKey={(payment) => payment.id}
           empty={<EmptyState icon="receipt" title="No payments recorded" description="Payments will appear here as you check clients out." />}
-        >
-          {recent.length > 0 &&
-            recent.map((p) => (
-              <tr key={p.id}>
-                <td className="px-6 py-4 text-secondary">{dateFmt.format(p.paidAt)}</td>
-                <td className="px-6 py-4 font-semibold text-on-surface">{formatMoney(p.amountCents, currency)}</td>
-                <td className="px-6 py-4">
-                  <Badge>{p.method.toUpperCase()}</Badge>
-                </td>
-                <td className="px-6 py-4 text-secondary">{p.appointmentId ? "Linked" : "—"}</td>
-              </tr>
-            ))}
-        </TableShell>
+        />
       </PageSection>
     </>
   );

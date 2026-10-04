@@ -3,11 +3,39 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { SearchField } from "@/components/ui/search-field";
-import { TableShell } from "@/components/ui/table-shell";
+import { TableShell, type TableColumn } from "@/components/ui/table-shell";
 import { PlaceholderNote } from "@/components/views/shared/placeholder-note";
 import { getCustomers } from "@/server/customers/queries";
 
 export const metadata: Metadata = { title: "Customers" };
+
+type CustomerRow = Awaited<ReturnType<typeof getCustomers>>[number];
+
+const CUSTOMER_COLUMNS: TableColumn<CustomerRow>[] = [
+  {
+    key: "name",
+    header: "Name",
+    cellClassName: "font-semibold text-on-surface",
+    renderCell: (customer) => customer.name,
+  },
+  {
+    key: "phone",
+    header: "Phone",
+    cellClassName: "text-secondary",
+    renderCell: (customer) => customer.phone ?? "-",
+  },
+  {
+    key: "email",
+    header: "Email",
+    cellClassName: "text-secondary",
+    renderCell: (customer) => customer.email ?? "-",
+  },
+  {
+    key: "visits",
+    header: "Visits",
+    renderCell: (customer) => customer.visitCount,
+  },
+];
 
 export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;
@@ -33,19 +61,11 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
       </form>
 
       <TableShell
-        columns={["Name", "Phone", "Email", "Visits"]}
+        columns={CUSTOMER_COLUMNS}
+        rows={customers}
+        rowKey={(customer) => customer.id}
         empty={<EmptyState icon="users" title={q ? "No matches" : "No customers yet"} description="Clients you add or book will appear here." />}
-      >
-        {customers.length > 0 &&
-          customers.map((c) => (
-            <tr key={c.id}>
-              <td className="px-6 py-4 font-semibold text-on-surface">{c.name}</td>
-              <td className="px-6 py-4 text-secondary">{c.phone ?? "—"}</td>
-              <td className="px-6 py-4 text-secondary">{c.email ?? "—"}</td>
-              <td className="px-6 py-4">{c.visitCount}</td>
-            </tr>
-          ))}
-      </TableShell>
+      />
     </>
   );
 }

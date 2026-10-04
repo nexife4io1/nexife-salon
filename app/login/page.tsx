@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { LoginForm } from "@/components/views/auth/login-form";
+import { loginAction } from "@/server/auth/actions";
 import { getLoginHints } from "@/server/auth/queries";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -51,7 +52,7 @@ export default async function LoginPage() {
           <p className="mt-2 text-body-md text-secondary">Sign in to manage your salon.</p>
 
           <Card padding="lg" className="mt-8">
-            <LoginForm defaultUsername={demoUsers[1]?.username} />
+            <LoginForm defaultUsername={demoUsers[1]?.username} action={loginAction} />
           </Card>
 
           {demoUsers.length > 0 && (
