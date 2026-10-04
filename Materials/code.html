@@ -1,0 +1,320 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Nexife - Branches</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-primary-container": "#533d07",
+                        "surface-container-low": "#f5f3f3",
+                        "background": "#fbf9f8",
+                        "inverse-primary": "#e3c281",
+                        "on-primary-fixed-variant": "#5a430e",
+                        "outline-variant": "#d0c5b5",
+                        "on-tertiary-fixed": "#1a1c1b",
+                        "surface-bright": "#fbf9f8",
+                        "error-container": "#ffdad6",
+                        "on-surface-variant": "#4d463a",
+                        "surface-container-highest": "#e4e2e2",
+                        "on-secondary-container": "#656464",
+                        "tertiary-fixed-dim": "#c6c7c5",
+                        "secondary-fixed-dim": "#c8c6c6",
+                        "primary-fixed": "#ffdf9f",
+                        "on-tertiary-container": "#3f4140",
+                        "on-secondary-fixed-variant": "#474747",
+                        "surface": "#fbf9f8",
+                        "tertiary-fixed": "#e2e3e1",
+                        "inverse-on-surface": "#f2f0f0",
+                        "on-primary-fixed": "#261a00",
+                        "primary-fixed-dim": "#e3c281",
+                        "on-surface": "#1b1c1c",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#e4e2e1",
+                        "inverse-surface": "#303031",
+                        "secondary": "#5f5e5e",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#dbdad9",
+                        "tertiary-container": "#acadab",
+                        "on-secondary-fixed": "#1b1c1c",
+                        "error": "#ba1a1a",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#efeded",
+                        "primary": "#735b24",
+                        "surface-container-high": "#e9e8e7",
+                        "outline": "#7f7668",
+                        "surface-tint": "#735b24",
+                        "on-tertiary-fixed-variant": "#454746",
+                        "secondary-container": "#e4e2e1",
+                        "on-background": "#1b1c1c",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e4e2e2",
+                        "primary-container": "#c8a96a",
+                        "tertiary": "#5d5f5d",
+                        "success-container": "#d3f5d6",
+                        "on-success-container": "#0c3b12",
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "80px",
+                        "base": "8px",
+                        "margin-mobile": "16px",
+                        "md": "24px",
+                        "margin-desktop": "40px",
+                        "sm": "12px",
+                        "gutter": "24px",
+                        "xs": "4px",
+                        "lg": "48px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Manrope"],
+                        "headline-lg": ["Manrope"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Manrope"],
+                        "headline-md": ["Manrope"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .card-shadow { box-shadow: 0px 4px 20px 0px rgba(0, 0, 0, 0.04); }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-64 bg-surface dark:bg-surface-dim border-r border-outline-variant/10 shadow-sm flex flex-col z-50">
+<div class="p-6">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">Nexife</h1>
+<p class="font-label-md text-label-md text-secondary mt-1">Premium Salon Management</p>
+</div>
+<div class="flex-1 overflow-y-auto py-4">
+<ul class="space-y-1">
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-label-md text-label-md">Appointments</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-label-md text-label-md">Customers</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-md text-label-md">Billing</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span class="font-label-md text-label-md">Staff</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-md text-label-md">Reports</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 text-primary dark:text-primary-fixed-dim font-bold border-l-4 border-primary bg-surface-container-low" href="#">
+<span class="material-symbols-outlined" data-icon="store" data-weight="fill" style="font-variation-settings: 'FILL' 1;">store</span>
+<span class="font-label-md text-label-md">Branches</span>
+</a>
+</li><li class="">
+<div class="px-4 py-2">
+<button class="w-full flex items-center justify-center gap-2 bg-primary-container text-on-primary-container font-label-md text-label-md py-3 px-4 rounded-lg hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+                AI Style Studio
+            </button>
+</div>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+<span class="font-label-md text-label-md">WhatsApp Center</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-4 py-3 text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</li>
+</ul>
+</div>
+
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-64 flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 z-40 flex justify-between items-center h-16 px-margin-desktop w-[calc(100%-16rem)] backdrop-blur-md bg-surface/80 dark:bg-surface-dim/80 shadow-sm">
+<div class="flex-1 max-w-md relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border-transparent focus:border-primary focus:ring-0 rounded-full font-body-sm text-body-sm text-on-surface placeholder-secondary transition-colors" placeholder="Search branches, staff..." type="text">
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-on-surface-variant dark:text-on-secondary-fixed-variant">
+<button class="hover:text-primary dark:hover:text-primary-fixed-dim transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="hover:text-primary dark:hover:text-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+</div>
+<div class="flex items-center gap-3 border-l border-outline-variant/30 pl-6 cursor-pointer hover:opacity-80 transition-opacity">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="Professional headshot of a female salon owner, modern lighting, clear background, high quality portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsP_ta1_ehi33ZlhQkRd9xHKhCHBA64NbfOJ3H9ldt3rD0v-5U0PeFQMcgudZNqLu3M50q1Bop-9klCnHCqozgsc5_-qX_WTr2-jnu85qrsq2521K__6c2qc4SzQe1j8o_qwPnqSMkJejan8e3Dc0-nZua3KEOHaRyi_njEJe8mx5DdM3Xlu2JAJFqZbGTtW55MiHEVEd-f8vNzy_miGKhaCb-f27zvUg90vfBBm0uInKiP2Hw6hyvDw">
+<div class="hidden md:block">
+<p class="font-label-md text-label-md text-on-surface">Sarah Jenkins</p>
+<p class="font-label-sm text-label-sm text-secondary">Owner</p>
+</div>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 pt-24 px-margin-desktop pb-margin-desktop bg-background">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-2">Branches</h2>
+<p class="font-body-md text-body-md text-secondary">Monitor your salon locations and today's branch performance.</p>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md py-3 px-6 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 shrink-0">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    Add New Branch
+                </button>
+</div>
+<!-- Branch Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Branch Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl card-shadow p-6 flex flex-col h-full border border-outline-variant/10">
+<div class="flex justify-between items-start mb-6">
+<h3 class="font-headline-md text-headline-md text-on-surface">Downtown Flagship</h3>
+<span class="bg-success-container text-on-success-container font-label-sm text-label-sm px-3 py-1 rounded-full">Active</span>
+</div>
+<div class="space-y-4 flex-1">
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-[20px]">location_on</span>
+<span class="font-body-sm text-body-sm">124 Main St, City Center</span>
+</div>
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-[20px]">person</span>
+<span class="font-body-sm text-body-sm">12 Staff</span>
+</div>
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+<span class="font-body-sm text-body-sm">24 Appointments Today</span>
+</div>
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-[20px]">payments</span>
+<span class="font-body-sm text-body-sm">$4,280 Today</span>
+</div>
+</div>
+<button class="mt-6 w-full flex items-center justify-center gap-2 border border-secondary text-on-surface font-label-md text-label-md py-2.5 rounded-lg hover:bg-surface-container-lowest hover:text-primary transition-colors group">
+                        View Branch Details
+                        <span class="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+<!-- Branch Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl card-shadow p-6 flex flex-col h-full border border-outline-variant/10">
+<div class="flex justify-between items-start mb-6">
+<h3 class="font-headline-md text-headline-md text-on-surface">Beverly Hills Studio</h3>
+<span class="bg-success-container text-on-success-container font-label-sm text-label-sm px-3 py-1 rounded-full">Active</span>
+</div>
+<div class="space-y-4 flex-1">
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-[20px]">location_on</span>
+<span class="font-body-sm text-body-sm">450 Rodeo Drive</span>
+</div>
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-[20px]">person</span>
+<span class="font-body-sm text-body-sm">8 Staff</span>
+</div>
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+<span class="font-body-sm text-body-sm">18 Appointments Today</span>
+</div>
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-[20px]">payments</span>
+<span class="font-body-sm text-body-sm">$6,120 Today</span>
+</div>
+</div>
+<button class="mt-6 w-full flex items-center justify-center gap-2 border border-secondary text-on-surface font-label-md text-label-md py-2.5 rounded-lg hover:bg-surface-container-lowest hover:text-primary transition-colors group">
+                        View Branch Details
+                        <span class="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+<!-- Branch Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl card-shadow p-6 flex flex-col h-full border border-outline-variant/10">
+<div class="flex justify-between items-start mb-6">
+<h3 class="font-headline-md text-headline-md text-on-surface">West Hollywood</h3>
+<span class="bg-success-container text-on-success-container font-label-sm text-label-sm px-3 py-1 rounded-full">Active</span>
+</div>
+<div class="space-y-4 flex-1">
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-[20px]">location_on</span>
+<span class="font-body-sm text-body-sm">8900 Melrose Ave</span>
+</div>
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-[20px]">person</span>
+<span class="font-body-sm text-body-sm">15 Staff</span>
+</div>
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+<span class="font-body-sm text-body-sm">32 Appointments Today</span>
+</div>
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-[20px]">payments</span>
+<span class="font-body-sm text-body-sm">$5,890 Today</span>
+</div>
+</div>
+<button class="mt-6 w-full flex items-center justify-center gap-2 border border-secondary text-on-surface font-label-md text-label-md py-2.5 rounded-lg hover:bg-surface-container-lowest hover:text-primary transition-colors group">
+                        View Branch Details
+                        <span class="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+</div>
+</main>
+</div>
+
+
+</body></html>
