@@ -8,7 +8,5 @@ export const metadata: Metadata = { title: "Branches" };
 export default async function BranchesPage() {
   await requireTenantContext("branches");
 
-  return (
-    <Branches />
-  );
+  return <Branches />;
 }
