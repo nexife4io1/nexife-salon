@@ -7,13 +7,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PageSection } from "@/components/ui/page-section";
 import { BranchStatusBadge } from "@/components/views/branches/branch-status-badge";
 import { PlaceholderNote } from "@/components/views/shared/placeholder-note";
-import { getBranchDetail } from "@/server/branches/queries";
+import { BranchServicesForm } from "@/components/views/branches/branch-services-form";
+import { getBranchDetail, getBranchServicesView } from "@/server/branches/queries";
 
 export const metadata: Metadata = { title: "Branch" };
 
 export default async function BranchDetailPage({ params }: { params: Promise<{ branchId: string }> }) {
   const { branchId } = await params;
-  const branch = await getBranchDetail(branchId);
+  const [branch, servicesView] = await Promise.all([getBranchDetail(branchId), getBranchServicesView(branchId)]);
 
   return (
     <>
@@ -44,6 +45,10 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ b
           <EmptyState icon="users" title="No roster yet" description="Staff assignment arrives with step 4." />
         </Card>
       </div>
+
+      <PageSection title="Services">
+        <BranchServicesForm branchId={branch.id} view={servicesView} />
+      </PageSection>
 
       <PageSection title="Performance" description="Revenue, utilisation and rebooking rate over time.">
         <Card>

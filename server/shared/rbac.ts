@@ -20,11 +20,12 @@ export const MENU_KEYS = [
   "assistant",
   "users",
   "platform",
+  "platform_services",
 ] as const;
 export type MenuKey = (typeof MENU_KEYS)[number];
 
 const ROLE_DEFAULT_MENUS: Record<Role, readonly MenuKey[]> = {
-  platform_admin: ["platform"],
+  platform_admin: ["platform", "platform_services"],
   owner: ["dashboard", "branches", "appointments", "customers", "staff", "billing", "inventory", "finance", "assistant", "users"],
   manager: ["dashboard", "branches", "appointments", "customers", "staff", "billing", "inventory", "assistant"],
   staff: ["dashboard", "appointments", "customers", "assistant"],

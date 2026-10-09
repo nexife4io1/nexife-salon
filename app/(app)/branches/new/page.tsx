@@ -5,12 +5,12 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { BranchForm } from "@/components/views/branches/branch-form";
 import { createBranchAction } from "@/server/branches/actions";
-import { getBranchesOverview } from "@/server/branches/queries";
+import { getBranchServiceOptions, getBranchesOverview } from "@/server/branches/queries";
 
 export const metadata: Metadata = { title: "Add branch" };
 
 export default async function NewBranchPage() {
-  const { canManage, source } = await getBranchesOverview();
+  const [{ canManage, source, currency }, services] = await Promise.all([getBranchesOverview(), getBranchServiceOptions()]);
   if (!canManage) redirect("/branches");
 
   return (
@@ -24,7 +24,7 @@ export default async function NewBranchPage() {
           title="Location details"
           description={source === "demo" ? "Demo mode is read-only — set DATABASE_URL to save branches." : undefined}
         />
-        <BranchForm action={createBranchAction} />
+        <BranchForm action={createBranchAction} services={services} currency={currency} />
       </Card>
     </div>
   );

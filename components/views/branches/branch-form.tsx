@@ -1,14 +1,18 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
 import type { ActionResult } from "@/server/shared/result";
+import type { SalonService } from "@/server/staff/schema";
+import { BranchServiceChecklist } from "./branch-service-checklist";
 
 type BranchFormAction = (prev: ActionResult | undefined, formData: FormData) => Promise<ActionResult>;
 
-export function BranchForm({ action }: { action: BranchFormAction }) {
+export function BranchForm({ action, services, currency }: { action: BranchFormAction; services: SalonService[]; currency: string }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  // New branches start out offering every service; untick what this location does not do.
+  const [offered, setOffered] = useState(() => services.map((s) => s.id));
   const fieldErrors = state && !state.ok ? state.error.fieldErrors : undefined;
 
   return (
@@ -36,6 +40,13 @@ export function BranchForm({ action }: { action: BranchFormAction }) {
           <option value="inactive">Inactive</option>
         </Select>
       </Field>
+
+      <div className="md:col-span-2">
+        <p className="mb-1 text-label-md text-on-surface-variant">Services offered</p>
+        <p className="mb-4 text-label-sm text-secondary">Choose what customers can book here. You can change this later from the branch page.</p>
+        <BranchServiceChecklist options={services} value={offered} onChange={setOffered} currency={currency} disabled={pending} />
+        {fieldErrors?.serviceIds && <p className="mt-2 text-label-sm text-error">{fieldErrors.serviceIds[0]}</p>}
+      </div>
 
       {state && !state.ok && state.error.code !== "VALIDATION" && (
         <p role="alert" className="rounded-control bg-error-container/60 px-4 py-3 text-body-sm text-on-error-container md:col-span-2">

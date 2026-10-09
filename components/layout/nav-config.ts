@@ -26,4 +26,5 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "assistant", label: "AI Style Studio", href: "/assistant", icon: "sparkles", kind: "feature", group: "manage" },
   { key: "users", label: "Users & Access", href: "/users", icon: "shield", group: "admin" },
   { key: "platform", label: "Tenants", href: "/platform", icon: "building", group: "admin" },
+  { key: "platform_services", label: "Service Catalog", href: "/platform/services", icon: "scissors", group: "admin" },
 ];
