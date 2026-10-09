@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { serviceAudienceSchema } from "@/server/shared/audience";
 
 /** Staff + Services are built together (roadmap step 4); the service catalog lives in this domain. */
 
@@ -16,6 +17,7 @@ export const salonServiceSchema = z.object({
   id: z.string(),
   name: z.string(),
   category: z.string().nullable(),
+  audience: serviceAudienceSchema,
   durationMinutes: z.number().int().positive(),
   priceCents: z.number().int().nonnegative(),
 });

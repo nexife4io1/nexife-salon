@@ -36,3 +36,9 @@ export async function requirePlatformAdmin(): Promise<Session> {
   if (session.role !== "platform_admin") redirect(homePathFor(session));
   return session;
 }
+
+/** For Server Actions: the session if it belongs to a platform admin, otherwise null (no redirect). */
+export async function getPlatformAdmin(): Promise<Session | null> {
+  const session = await getSession();
+  return session?.role === "platform_admin" ? session : null;
+}

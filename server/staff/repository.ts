@@ -37,11 +37,11 @@ export async function listServices(tenantId: string): Promise<SalonService[]> {
   if (!isDatabaseConfigured()) {
     return fixtureServices
       .filter((s) => s.tenantId === tenantId)
-      .map((s, i) => ({ id: `fixture-${i}`, name: s.name, category: s.category, durationMinutes: s.durationMinutes, priceCents: s.priceCents }));
+      .map((s, i) => ({ id: `fixture-${i}`, name: s.name, category: s.category, audience: s.audience, durationMinutes: s.durationMinutes, priceCents: s.priceCents }));
   }
   return withTenant(tenantId, (tx) =>
     tx
-      .select({ id: services.id, name: services.name, category: services.category, durationMinutes: services.durationMinutes, priceCents: services.priceCents })
+      .select({ id: services.id, name: services.name, category: services.category, audience: services.audience, durationMinutes: services.durationMinutes, priceCents: services.priceCents })
       .from(services)
       .where(and(eq(services.tenantId, tenantId), eq(services.active, true)))
       .orderBy(asc(services.name)),
