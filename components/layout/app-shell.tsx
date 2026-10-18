@@ -24,9 +24,9 @@ export function AppShell({
       <NavigationRuntimeBridge />
       <GlobalNavigationLoader />
       <Sidebar allowed={allowedMenus} tenantName={tenantName} />
-      <div className="flex min-h-screen flex-col lg:pl-sidebar">
+      <div className="flex min-h-screen flex-col lg:pl-sidebar print:pl-0">
         <Topbar userName={user.name} role={user.role} signOutAction={signOutAction} />
-        <main className="flex-1 px-4 pt-[calc(var(--spacing-topbar)+2rem)] pb-page md:px-page">
+        <main className="flex-1 px-4 pt-[calc(var(--spacing-topbar)+2rem)] pb-page md:px-page print:p-0">
           <div className="mx-auto w-full max-w-content">
             <Suspense fallback={null}>{children}</Suspense>
           </div>

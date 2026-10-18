@@ -13,7 +13,7 @@ const ROLE_LABELS: Record<string, string> = {
 /** Glassy fixed top bar (mockup TopAppBar): search pill, quiet icons, profile. */
 export function Topbar({ userName, role, signOutAction }: { userName: string; role: string; signOutAction: () => Promise<void> }) {
   return (
-    <header className="fixed top-0 right-0 left-0 z-30 flex h-topbar items-center justify-between gap-4 bg-surface/80 px-4 shadow-sm backdrop-blur-md md:px-page lg:left-sidebar">
+    <header className="fixed top-0 print:hidden right-0 left-0 z-30 flex h-topbar items-center justify-between gap-4 bg-surface/80 px-4 shadow-sm backdrop-blur-md md:px-page lg:left-sidebar">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <MobileNavToggle />
         {/* TODO(step 3): global search across customers, appointments and staff. */}

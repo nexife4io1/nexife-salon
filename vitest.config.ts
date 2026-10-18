@@ -11,6 +11,8 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // Each integration suite boots an in-process Postgres (PGlite) and applies every migration.
+    hookTimeout: 60_000,
     include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
   },
 });

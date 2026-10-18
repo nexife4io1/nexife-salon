@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { SalonService } from "@/server/staff/schema";
+import type { TenantService } from "@/server/tenants/schema";
 
 export const BRANCH_STATUSES = ["active", "inactive", "opening_soon"] as const;
 export const branchStatusSchema = z.enum(BRANCH_STATUSES);
@@ -56,7 +56,7 @@ export type SetBranchServicesInput = z.infer<typeof setBranchServicesInputSchema
 
 /** A branch's service offerings: every active tenant service (`options`) and which ones this branch offers. */
 export type BranchServicesView = {
-  options: SalonService[];
+  options: TenantService[];
   offeredIds: string[];
   currency: string;
   canManage: boolean;

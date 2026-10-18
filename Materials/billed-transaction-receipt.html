@@ -1,0 +1,289 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Nexife - Receipt</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#ffffff",
+                        "tertiary": "#5d5f5d",
+                        "on-surface-variant": "#4d463a",
+                        "primary": "#735b24",
+                        "on-secondary-fixed-variant": "#474747",
+                        "surface-container-low": "#f5f3f3",
+                        "primary-container": "#c8a96a",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#261a00",
+                        "primary-fixed": "#ffdf9f",
+                        "secondary-fixed": "#e4e2e1",
+                        "on-primary-container": "#533d07",
+                        "on-tertiary-fixed-variant": "#454746",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#e3c281",
+                        "on-secondary-container": "#656464",
+                        "inverse-surface": "#303031",
+                        "background": "#fbf9f8",
+                        "surface-dim": "#dbdad9",
+                        "tertiary-fixed": "#e2e3e1",
+                        "tertiary-container": "#acadab",
+                        "on-secondary": "#ffffff",
+                        "surface": "#fbf9f8",
+                        "surface-tint": "#735b24",
+                        "on-background": "#1b1c1c",
+                        "secondary-fixed-dim": "#c8c6c6",
+                        "surface-bright": "#fbf9f8",
+                        "on-tertiary-container": "#3f4140",
+                        "on-secondary-fixed": "#1b1c1c",
+                        "inverse-primary": "#e3c281",
+                        "secondary": "#5f5e5e",
+                        "secondary-container": "#e4e2e1",
+                        "outline-variant": "#d0c5b5",
+                        "surface-container-high": "#e9e8e7",
+                        "outline": "#7f7668",
+                        "inverse-on-surface": "#f2f0f0",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#e4e2e2",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#5a430e",
+                        "tertiary-fixed-dim": "#c6c7c5",
+                        "on-surface": "#1b1c1c",
+                        "surface-container": "#efeded",
+                        "on-tertiary-fixed": "#1a1c1b",
+                        "surface-container-highest": "#e4e2e2"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "80px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "40px",
+                        "base": "8px",
+                        "md": "24px",
+                        "lg": "48px",
+                        "gutter": "24px",
+                        "xs": "4px",
+                        "sm": "12px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Manrope", "sans-serif"],
+                        "body-lg": ["Plus Jakarta Sans", "sans-serif"],
+                        "label-sm": ["Plus Jakarta Sans", "sans-serif"],
+                        "headline-lg": ["Manrope", "sans-serif"],
+                        "body-md": ["Plus Jakarta Sans", "sans-serif"],
+                        "headline-lg-mobile": ["Manrope", "sans-serif"],
+                        "body-sm": ["Plus Jakarta Sans", "sans-serif"],
+                        "label-md": ["Plus Jakarta Sans", "sans-serif"],
+                        "display-lg": ["Manrope", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #fbf9f8; }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex antialiased">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-64 bg-surface dark:bg-surface-dim border-r border-outline-variant/10 shadow-sm flex flex-col z-50">
+<div class="mb-8 px-md"><h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">Nexife</h1><p class="font-label-md text-label-md text-secondary mt-1">Premium Salon Management</p></div>
+<div class="flex-1 overflow-y-auto space-y-1">
+<a class="flex items-center gap-sm px-md py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-surface-bright hover:bg-surface-container-high dark:hover:bg-tertiary-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-surface-bright hover:bg-surface-container-high dark:hover:bg-tertiary-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-label-md text-label-md">Appointments</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-surface-bright hover:bg-surface-container-high dark:hover:bg-tertiary-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-label-md text-label-md">Customers</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-primary dark:text-primary-fixed-dim bg-secondary-container dark:bg-on-tertiary-fixed-variant rounded-lg font-bold hover:bg-surface-container-high dark:hover:bg-tertiary-container transition-colors duration-200 active:scale-[0.99] transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="payments" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="font-label-md text-label-md">Billing</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-surface-bright hover:bg-surface-container-high dark:hover:bg-tertiary-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span class="font-label-md text-label-md">Staff</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-surface-bright hover:bg-surface-container-high dark:hover:bg-tertiary-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-md text-label-md">Reports</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-surface-bright hover:bg-surface-container-high dark:hover:bg-tertiary-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="location_on">location_on</span>
+<span class="font-label-md text-label-md">Branches</span>
+</a>
+<div class="pt-4 pb-2">
+<div class="px-md font-label-sm text-label-sm text-secondary mb-2 uppercase tracking-wider">Intelligence</div>
+<a class="flex items-center gap-sm px-md py-sm text-primary font-bold hover:bg-surface-container-high transition-colors duration-200 rounded-lg bg-gradient-to-r from-primary-fixed-dim/20 to-transparent border-l-2 border-primary" href="#">
+<span class="material-symbols-outlined text-primary" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-label-md text-label-md text-primary">AI Style Studio</span>
+</a>
+</div>
+<a class="flex items-center gap-sm px-md py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-surface-bright hover:bg-surface-container-high dark:hover:bg-tertiary-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+<span class="font-label-md text-label-md">WhatsApp Center</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-surface-bright hover:bg-surface-container-high dark:hover:bg-tertiary-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</nav>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 z-40 flex justify-between items-center h-16 px-margin-desktop w-[calc(100%-16rem)] backdrop-blur-md bg-surface/80 dark:bg-surface-dim/80 shadow-sm">
+<div class="flex items-center gap-md">
+<span class="font-headline-md text-headline-md text-on-background hidden">Nexife</span>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary" data-icon="search">search</span>
+<input class="bg-surface-container-low border-none rounded-full pl-10 pr-4 py-2 font-body-md text-body-md text-on-surface focus:ring-1 focus:ring-primary focus:outline-none w-64 placeholder-secondary" placeholder="Search..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="text-secondary hover:text-primary transition-all p-2 rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-secondary hover:text-primary transition-all p-2 rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant ml-2">
+<img alt="Salon Manager Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a confident salon manager in their late 30s, looking directly at the camera with a warm smile. They are in a well-lit, high-end modern salon setting with bright, natural light filtering in. The lighting is soft and flattering, highlighting the minimalist, premium aesthetic of the background with its soft beige and white tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-zbv1TaM5R0eAGSpYenW2FZ5pPHvsm6SYRY0JhgVof-vpz6DEr_RR81qQZe83n0OgJhRIkZk57qcUF7fNXivy4gHCOeVMJYja2O-7JBXmylUijjEGUdU6H3nVxudCVFjZG1Ekar7yjvLApdgBmhnl1qgwgCSvjlznhe4Cb--uGQDbusWm0AjwInjM571IzHR5SfmXfc-y9xTLSpVGWtKuxwvD_4QyVcK7fijaGyQpPZiFsFKQoz88Kw">
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 ml-0 pt-20 pb-12 px-margin-mobile md:px-margin-desktop bg-background min-h-screen flex flex-col items-center md:ml-64">
+<div class="w-full max-w-3xl mt-lg">
+<!-- Header Section -->
+<div class="text-center mb-lg">
+<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-container/20 text-primary mb-4">
+<span class="material-symbols-outlined text-4xl" data-icon="check_circle" data-weight="fill">check_circle</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-background mb-2">Payment Successful</h1>
+<p class="font-body-lg text-body-lg text-secondary">The transaction has been completed successfully.</p>
+</div>
+<!-- Receipt Card -->
+<div class="bg-surface-container-lowest rounded-xl p-md md:p-lg border border-outline-variant shadow-[0_4px_20px_-4px_rgba(27,28,28,0.04)] mb-lg relative overflow-hidden">
+<!-- Decor line -->
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-primary-fixed-dim"></div>
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 pb-6 border-b border-outline-variant/30">
+<div>
+<p class="font-label-sm text-label-sm text-secondary uppercase tracking-wider mb-1">Customer</p>
+<h2 class="font-headline-md text-headline-md text-on-background">Sophia Loren</h2>
+<p class="font-body-sm text-body-sm text-secondary">ID: NX-402</p>
+</div>
+<div class="mt-4 md:mt-0 text-left md:text-right">
+<p class="font-label-sm text-label-sm text-secondary uppercase tracking-wider mb-1">Transaction</p>
+<p class="font-body-md text-body-md text-on-background font-medium">#NX-2026-00482</p>
+</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 pb-6 border-b border-outline-variant/30">
+<div>
+<p class="font-label-sm text-label-sm text-secondary uppercase tracking-wider mb-1">Date</p>
+<p class="font-body-md text-body-md text-on-background">Oct 24, 2023</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-secondary uppercase tracking-wider mb-1">Time</p>
+<p class="font-body-md text-body-md text-on-background">02:45 PM</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-secondary uppercase tracking-wider mb-1">Method</p>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="credit_card">credit_card</span>
+<p class="font-body-md text-body-md text-on-background">Card</p>
+</div>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-secondary uppercase tracking-wider mb-1">Status</p>
+<span class="inline-flex items-center px-2 py-1 rounded-full bg-surface-container-low text-primary font-label-sm text-label-sm border border-outline-variant/20">
+                            Paid
+                        </span>
+</div>
+</div>
+<div class="mb-8">
+<h3 class="font-headline-md text-headline-md text-on-background mb-4 text-lg">Services List</h3>
+<div class="flex justify-between items-center py-3 border-b border-outline-variant/10">
+<div>
+<p class="font-body-md text-body-md text-on-background font-medium">Balayage &amp; Hair Spa</p>
+<p class="font-body-sm text-body-sm text-secondary">Stylist: Elena R.</p>
+</div>
+<p class="font-body-md text-body-md text-on-background font-medium">₹6,500.00</p>
+</div>
+<!-- Could add more items here if needed, keeping to the spec for now -->
+</div>
+<div class="bg-surface-container-low rounded-lg p-md">
+<div class="flex justify-between items-center mb-2">
+<p class="font-body-sm text-body-sm text-secondary">Subtotal</p>
+<p class="font-body-sm text-body-sm text-on-background">₹6,500.00</p>
+</div>
+<div class="flex justify-between items-center mb-2">
+<p class="font-body-sm text-body-sm text-primary">Discount (VIP 10%)</p>
+<p class="font-body-sm text-body-sm text-primary">-₹650.00</p>
+</div>
+<div class="flex justify-between items-center mb-2">
+<p class="font-body-sm text-body-sm text-secondary">GST 5 %</p>
+<p class="font-body-sm text-body-sm text-on-background">₹292.50</p>
+</div>
+<div class="flex justify-between items-center mb-4 pb-4 border-b border-outline-variant/30">
+<p class="font-body-sm text-body-sm text-secondary">Tip</p>
+<p class="font-body-sm text-body-sm text-on-background">₹0.00</p>
+</div>
+<div class="flex justify-between items-center">
+<p class="font-headline-md text-headline-md text-on-background">Total Paid</p>
+<p class="font-display-lg text-display-lg text-primary text-3xl md:text-4xl">₹6,142.50</p>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex flex-col md:flex-row gap-md justify-center mb-8">
+<button class="bg-primary-container text-on-primary-container font-label-md text-label-md px-xl py-3 rounded-lg hover:bg-primary-fixed transition-colors duration-200 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" data-icon="print">print</span>
+                    Print Receipt
+                </button>
+<button class="bg-transparent border border-outline text-on-background font-label-md text-label-md px-xl py-3 rounded-lg hover:bg-surface-container-high transition-colors duration-200 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[#25D366]" data-icon="chat">chat</span>
+                    Share via WhatsApp
+                </button>
+</div>
+<div class="text-center">
+
+</div>
+</div>
+</main>
+
+
+
+
+
+
+
+
+</body></html>

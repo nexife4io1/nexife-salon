@@ -29,6 +29,27 @@
       "when": 1791543295083,
       "tag": "0003_branch_services_audience",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791922129757,
+      "tag": "0004_staff_management",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792229388642,
+      "tag": "0005_customer_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792307720484,
+      "tag": "0006_billing_checkout",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,362 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Nexife - Customers Management</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#93000a",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#c8a96a",
+                        "on-primary-fixed-variant": "#5a430e",
+                        "surface-bright": "#fbf9f8",
+                        "on-surface": "#1b1c1c",
+                        "surface-container": "#efeded",
+                        "surface": "#fbf9f8",
+                        "secondary-fixed-dim": "#c8c6c6",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#e4e2e1",
+                        "on-background": "#1b1c1c",
+                        "on-surface-variant": "#4d463a",
+                        "on-tertiary-fixed": "#1a1c1b",
+                        "on-secondary-fixed": "#1b1c1c",
+                        "surface-container-low": "#f5f3f3",
+                        "inverse-primary": "#e3c281",
+                        "surface-tint": "#735b24",
+                        "outline": "#7f7668",
+                        "on-primary-fixed": "#261a00",
+                        "surface-container-highest": "#e4e2e2",
+                        "outline-variant": "#d0c5b5",
+                        "on-secondary-container": "#656464",
+                        "tertiary-container": "#acadab",
+                        "surface-dim": "#dbdad9",
+                        "tertiary": "#5d5f5d",
+                        "secondary": "#5f5e5e",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e4e2e2",
+                        "primary-fixed-dim": "#e3c281",
+                        "inverse-surface": "#303031",
+                        "on-tertiary-fixed-variant": "#454746",
+                        "inverse-on-surface": "#f2f0f0",
+                        "on-secondary-fixed-variant": "#474747",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#ffdf9f",
+                        "secondary-fixed": "#e4e2e1",
+                        "background": "#fbf9f8",
+                        "on-primary-container": "#533d07",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#e2e3e1",
+                        "tertiary-fixed-dim": "#c6c7c5",
+                        "on-tertiary-container": "#3f4140",
+                        "primary": "#735b24",
+                        "surface-container-high": "#e9e8e7"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "gutter": "24px",
+                        "md": "24px",
+                        "margin-desktop": "40px",
+                        "sm": "12px",
+                        "xs": "4px",
+                        "xl": "80px",
+                        "margin-mobile": "16px",
+                        "lg": "48px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Plus Jakarta Sans", "sans-serif"],
+                        "body-lg": ["Plus Jakarta Sans", "sans-serif"],
+                        "label-md": ["Plus Jakarta Sans", "sans-serif"],
+                        "headline-lg-mobile": ["Manrope", "sans-serif"],
+                        "headline-lg": ["Manrope", "sans-serif"],
+                        "display-lg": ["Manrope", "sans-serif"],
+                        "body-sm": ["Plus Jakarta Sans", "sans-serif"],
+                        "body-md": ["Plus Jakarta Sans", "sans-serif"],
+                        "headline-md": ["Manrope", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<!-- Material Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .shadow-ambient {
+            box-shadow: 0 4px 20px rgba(27, 28, 28, 0.04);
+        }
+
+        /* Custom scrollbar for table */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #d0c5b5; 
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex antialiased">
+<!-- SideNavBar (JSON Component) -->
+<aside class="fixed left-0 top-0 h-full w-64 border-r border-outline-variant/10 bg-surface dark:bg-surface-dim shadow-sm flex flex-col py-lg px-md z-50">
+<div class="p-6">
+    <div class="text-2xl font-bold text-[#8a703d] tracking-tight">Nexife</div>
+    <div class="text-[10px] uppercase tracking-wider text-[#8a703d]/70 font-semibold mt-0.5">Salon Management</div>
+</div>
+<nav class="flex-1 space-y-sm flex flex-col">
+<a class="flex items-center space-x-md px-sm py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="text-label-md font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center space-x-md px-sm py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">calendar_month</span>
+<span class="text-label-md font-label-md">Appointments</span>
+</a>
+<a class="flex items-center space-x-md px-sm py-sm rounded-lg text-primary dark:text-primary-fixed-dim border-l-4 border-primary dark:border-primary-fixed-dim bg-primary-container/10 opacity-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 1;">group</span>
+<span class="text-label-md font-label-md">Customer Intelligence</span>
+</a>
+<a class="flex items-center space-x-md px-sm py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">payments</span>
+<span class="text-label-md font-label-md">Billing</span>
+</a>
+<a class="flex items-center space-x-md px-sm py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">badge</span>
+<span class="text-label-md font-label-md">Staff</span>
+</a>
+<a class="flex items-center space-x-md px-sm py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">analytics</span>
+<span class="text-label-md font-label-md">Reports</span>
+</a>
+<a class="flex items-center space-x-md px-sm py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">location_on</span>
+<span class="text-label-md font-label-md">Branches</span>
+</a><a class="flex items-center space-x-md px-sm py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors duration-200 glass-panel relative overflow-hidden group" href="#"><div class="absolute inset-0 bg-gradient-to-r from-primary-container/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div><div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container"></div><span class="material-symbols-outlined text-[20px] text-primary-container">auto_awesome</span><span class="text-label-md font-label-md font-bold text-on-surface">AI Style Studio</span></a>
+<a class="flex items-center space-x-md px-sm py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors duration-200" href="#"><span class="material-symbols-outlined text-[20px]">chat</span><span class="text-label-md font-label-md">WhatsApp Center</span></a><a class="flex items-center space-x-md px-sm py-sm rounded-lg text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors duration-200" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span class="text-label-md font-label-md">Settings</span></a></nav>
+
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 ml-64 flex flex-col min-w-0">
+<!-- TopAppBar (JSON Component) -->
+<header class="sticky top-0 z-40 w-full bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-md border-b border-outline-variant/10 shadow-sm flex justify-between items-center h-20 px-margin-desktop">
+<!-- Search -->
+<div class="flex-1 max-w-md relative hidden md:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-2 pl-xl pr-md text-body-sm font-body-sm text-on-surface placeholder:text-on-surface-variant focus:ring-1 focus:ring-primary-container transition-all" placeholder="Search customers, appointments..." type="text">
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center space-x-md ml-auto">
+<button class="text-secondary hover:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full p-2 transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-secondary hover:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full p-2 transition-colors">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden border border-outline-variant/30 ml-sm cursor-pointer">
+<img alt="Salon Manager Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a female salon manager with warm lighting, soft background, wearing a smart casual blazer, modern and friendly aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzkzGp0Jz0CnuTUVWcUThMzlqOOif-6fi4vLL6gv8zaUY2N3CGhjXbsLa1hurE3ZPm7NCdLL8epl5Vkn3InTOw8gFHUhHu56cjzkYs_JaSy-y3iWM2dbgn-4Pf7U68_vZgiqaG35fgmod0VWAGnCHxbL__GBJGUYTyc9TuGwqwQZC5ZqcteCsD_5HCIwnUA9h2Ebn7MwJrTiErs_Pn7dJ335zCuAOn11OdKghbDsiu7dtFsnVh-TJfgA">
+</div>
+</div>
+</header>
+<!-- Page Content Canvas -->
+<main class="flex-1 px-margin-desktop py-lg overflow-y-auto">
+<!-- Page Header -->
+
+<!-- KPI Cards Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-lg">
+<!-- KPI 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-ambient border border-outline-variant/10 flex flex-col justify-between h-full">
+<div class="flex justify-between items-start mb-sm">
+<span class="text-label-md font-label-md text-on-surface-variant uppercase">Total Customers</span>
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">group</span>
+</div>
+</div>
+<div>
+<span class="text-display-lg font-display-lg text-on-surface block">1,284</span>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-ambient border border-outline-variant/10 flex flex-col justify-between h-full">
+<div class="flex justify-between items-start mb-sm">
+<span class="text-label-md font-label-md text-on-surface-variant uppercase">Active Members</span>
+<div class="w-8 h-8 rounded-full bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-primary-container" style="font-variation-settings: &quot;FILL&quot; 1;">star</span>
+</div>
+</div>
+<div>
+<span class="text-display-lg font-display-lg text-on-surface block">842</span>
+</div>
+</div>
+<!-- KPI 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-ambient border border-outline-variant/10 flex flex-col justify-between h-full">
+<div class="flex justify-between items-start mb-sm">
+<span class="text-label-md font-label-md text-on-surface-variant uppercase">Guest Customers</span>
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">person</span>
+</div>
+</div>
+<div>
+<span class="text-display-lg font-display-lg text-on-surface block">442</span>
+</div>
+</div>
+<!-- KPI 4 -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-ambient border border-outline-variant/10 flex flex-col justify-between h-full relative overflow-hidden">
+<div class="absolute right-0 bottom-0 w-32 h-32 bg-primary-container/10 rounded-full blur-2xl transform translate-x-1/2 translate-y-1/2"></div>
+<div class="flex justify-between items-start mb-sm relative z-10">
+<span class="text-label-md font-label-md text-on-surface-variant uppercase">New This Month</span>
+<div class="w-8 h-8 rounded-full bg-[#E8F5E9] flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-[#2E7D32]">trending_up</span>
+</div>
+</div>
+<div class="relative z-10">
+<span class="text-display-lg font-display-lg text-on-surface block">+56</span>
+<span class="text-label-sm font-label-sm text-[#2E7D32] mt-1 flex items-center"><span class="material-symbols-outlined text-[14px] mr-1">arrow_upward</span> 12% vs last month</span>
+</div>
+</div>
+</div>
+<!-- Bento Grid Layout for Main Content -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Main Table Section (Span 8) -->
+<div class="lg:col-span-8 flex flex-col space-y-md">
+<!-- Management Toolbar -->
+<div class="bg-surface-container-lowest rounded-xl p-sm shadow-ambient border border-outline-variant/10 flex flex-wrap lg:flex-nowrap items-center justify-between gap-md">
+<!-- Search -->
+
+<!-- Filters -->
+<div class="flex items-center space-x-sm overflow-x-auto custom-scrollbar pb-1 lg:pb-0 w-full justify-between">
+<!-- Segmented Control 1 -->
+<div class="flex bg-surface-container rounded-lg p-1">
+<button class="px-3 py-1 rounded-md bg-surface-container-lowest text-on-surface text-label-md font-label-md shadow-sm">All</button>
+<button class="px-3 py-1 rounded-md text-on-surface-variant hover:text-on-surface text-label-md font-label-md transition-colors">Members</button>
+<button class="px-3 py-1 rounded-md text-on-surface-variant hover:text-on-surface text-label-md font-label-md transition-colors">Guests</button>
+<button class="px-3 py-1 rounded-md text-on-surface-variant hover:text-on-surface text-label-md font-label-md transition-colors flex items-center space-x-1"><span class="w-1.5 h-1.5 rounded-full bg-outline-variant mr-1"></span><span class="">At-Risk (18)</span></button></div>
+<!-- Sort -->
+<button class="flex items-center space-x-xs px-3 py-1.5 rounded-lg border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container transition-colors text-label-md font-label-md whitespace-nowrap mr-2"><span class="material-symbols-outlined text-[16px]">calendar_today</span><span class="">Joined: All Time</span><span class="material-symbols-outlined text-[16px]">expand_more</span></button><button class="flex items-center space-x-xs px-3 py-1.5 rounded-lg border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container transition-colors text-label-md font-label-md whitespace-nowrap">
+<span class="material-symbols-outlined text-[16px]">sort</span>
+<span class="">Recently Added</span>
+</button>
+</div>
+</div>
+<!-- The Table Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-ambient border border-outline-variant/10 overflow-hidden flex-1 flex flex-col">
+<div class="overflow-x-auto custom-scrollbar flex-1"><div class="customer-table-scroll overflow-x-auto w-full custom-scrollbar custom-scrollbar-gold"><table class="w-full text-left border-collapse min-w-[800px]"><thead><tr class="border-b border-outline-variant/20 bg-surface/50"><th class="py-4 px-md text-label-md font-label-md text-on-surface-variant uppercase font-medium">ID</th><th class="py-4 px-md text-label-md font-label-md text-on-surface-variant uppercase font-medium">Customer Name</th><th class="py-4 px-md text-label-md font-label-md text-on-surface-variant uppercase font-medium">Phone</th><th class="py-4 px-md text-label-md font-label-md text-on-surface-variant uppercase font-medium">Type</th><th class="py-4 px-md text-label-md font-label-md text-on-surface-variant uppercase font-medium">Visits</th><th class="py-4 px-md text-label-md font-label-md text-on-surface-variant uppercase font-medium">Last Visit</th><th class="py-4 px-md text-label-md font-label-md text-on-surface-variant uppercase font-medium">Preferred Staff</th><th class="py-4 px-md text-label-md font-label-md text-on-surface-variant uppercase font-medium">Status</th><th class="py-4 px-md text-right text-label-md font-label-md text-on-surface-variant uppercase font-medium">Actions</th></tr></thead><tbody class="divide-y divide-outline-variant/10 text-body-sm font-body-sm"><tr class="hover:bg-surface-container-low/50 transition-colors group cursor-pointer"><td class="py-3 px-md text-on-surface-variant">NX-402</td><td class="py-3 px-md"><div class="flex items-center space-x-sm"><div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container"><img alt="Sophia Loren" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCknfUX3I45t7vVwYFGvcCCEjH7FahIbl1zJ7rnsg8OCQYi7J5HS9kxpD3XpWU4VRIOpJ6MiuP_QJCEvADAqRVfK5vwNGarvj1ii0AwyScMoAIBPx7EyR2SFSYBKaMKINSU54ZHodsNlwXasLEfDcmWPEZGNAUwgFo-WyF8aYYTZyztdZOI2TG_qZ6G7Welxfk-ge2jacZp1lPTBtgjJk1jl1vIvkWNwgKCmkHBOansb8pyCXjENEx1Ag"></div><p class="text-on-surface font-semibold group-hover:text-primary-container transition-colors">Sophia Loren</p></div></td><td class="py-3 px-md text-on-surface">+91 9845012345</td><td class="py-3 px-md"><span class="inline-flex items-center px-2 py-1 rounded-full bg-primary-container/10 text-on-primary-container text-label-sm font-label-sm"><span class="material-symbols-outlined text-[12px] mr-1" style="font-variation-settings: 'FILL' 1;">star</span> Member</span></td><td class="py-3 px-md"><p class="text-on-surface">12</p></td><td class="py-3 px-md"><p class="text-on-surface">Oct 24, 2023</p></td><td class="py-3 px-md"><p class="text-on-surface">Elena G.</p></td><td class="py-3 px-md"><span class="inline-flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-[#4CAF50]"></span><span class="text-label-sm font-label-sm text-on-surface-variant">Active</span></span></td><td class="py-3 px-md text-center"><div class="flex items-center justify-end space-x-1"><button title="View Customer 360" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">person</span></button><button title="Book Appointment" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">calendar_month</span></button><button title="Send WhatsApp" class="p-1 text-on-surface-variant hover:text-[#2E7D32] hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">chat</span></button><button title="Transactions &amp; Billing" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">payments</span></button></div></td></tr><tr class="hover:bg-surface-container-low/50 transition-colors group cursor-pointer"><td class="py-3 px-md text-on-surface-variant">NX-891</td><td class="py-3 px-md"><div class="flex items-center space-x-sm"><div class="w-10 h-10 rounded-full flex items-center justify-center bg-[#E1F5FE] text-[#0288D1] text-label-md font-label-md font-bold">MJ</div><p class="text-on-surface font-semibold group-hover:text-primary-container transition-colors">Marcus Johnson</p></div></td><td class="py-3 px-md text-on-surface">+91 9812345678</td><td class="py-3 px-md"><span class="inline-flex items-center px-2 py-1 rounded-full bg-surface-container text-on-surface-variant text-label-sm font-label-sm">Guest</span></td><td class="py-3 px-md"><p class="text-on-surface">3</p></td><td class="py-3 px-md"><p class="text-on-surface">Nov 02, 2023</p></td><td class="py-3 px-md"><p class="text-on-surface">Sarah T.</p></td><td class="py-3 px-md"><span class="inline-flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-[#4CAF50]"></span><span class="text-label-sm font-label-sm text-on-surface-variant">Active</span></span></td><td class="py-3 px-md text-center"><div class="flex items-center justify-end space-x-1"><button title="View Customer 360" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">person</span></button><button title="Book Appointment" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">calendar_month</span></button><button title="Send WhatsApp" class="p-1 text-on-surface-variant hover:text-[#2E7D32] hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">chat</span></button><button title="Transactions &amp; Billing" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">payments</span></button></div></td></tr><tr class="hover:bg-surface-container-low/50 transition-colors group cursor-pointer"><td class="py-3 px-md text-on-surface-variant">NX-112</td><td class="py-3 px-md"><div class="flex items-center space-x-sm"><div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container"><img alt="Isabella Rossellini" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANeTcOnoMT29Bnou0xzeoNCMY0IrxekcEiZ15HtivTKyE2oUznjEZj2FRjeVtIgzVKUAffWgIt173wrvqNfT8fzP3NduJobdu-jc3lBb_9Dgm1qNCuLLVKri72bffc7ngvoI9I7pcEnrPs-m_-NkvXkWZgXcyYNmxCPP8V1Nac7ZDgMjlSjaG4C901lSaDYe2vOUi9xpwQeVN9CpH2laTostd_4baDN7EJWCqV4CKg8qyfYWth1tqTaw"></div><p class="text-on-surface font-semibold group-hover:text-primary-container transition-colors">Isabella Rossellini</p></div></td><td class="py-3 px-md text-on-surface">+91 9723456789</td><td class="py-3 px-md"><span class="inline-flex items-center px-2 py-1 rounded-full bg-primary-container/10 text-on-primary-container text-label-sm font-label-sm"><span class="material-symbols-outlined text-[12px] mr-1" style="font-variation-settings: 'FILL' 1;">star</span> VIP Member</span></td><td class="py-3 px-md"><p class="text-on-surface">45</p></td><td class="py-3 px-md"><p class="text-on-surface">Oct 15, 2023</p></td><td class="py-3 px-md"><p class="text-on-surface">Elena G.</p></td><td class="py-3 px-md"><span class="inline-flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-outline-variant"></span><span class="text-label-sm font-label-sm text-on-surface-variant">Inactive (&gt;60d)</span></span></td><td class="py-3 px-md text-center"><div class="flex items-center justify-end space-x-1"><button title="View Customer 360" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">person</span></button><button title="Book Appointment" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">calendar_month</span></button><button title="Send WhatsApp" class="p-1 text-on-surface-variant hover:text-[#2E7D32] hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">chat</span></button><button title="Transactions &amp; Billing" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">payments</span></button></div></td></tr><tr class="hover:bg-surface-container-low/50 transition-colors group cursor-pointer border-b-0"><td class="py-3 px-md text-on-surface-variant">NX-904</td><td class="py-3 px-md"><div class="flex items-center space-x-sm"><div class="w-10 h-10 rounded-full flex items-center justify-center bg-[#FCE4EC] text-[#C2185B] text-label-md font-label-md font-bold">EK</div><p class="text-on-surface font-semibold group-hover:text-primary-container transition-colors">Emma Knight</p></div></td><td class="py-3 px-md text-on-surface">+91 9934567890</td><td class="py-3 px-md"><span class="inline-flex items-center px-2 py-1 rounded-full bg-surface-container text-on-surface-variant text-label-sm font-label-sm">Guest</span></td><td class="py-3 px-md"><p class="text-on-surface">1</p></td><td class="py-3 px-md"><p class="text-on-surface">Nov 04, 2023</p></td><td class="py-3 px-md"><p class="text-on-surface">David R.</p></td><td class="py-3 px-md"><span class="inline-flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-[#4CAF50]"></span><span class="text-label-sm font-label-sm text-on-surface-variant">Active</span></span></td><td class="py-3 px-md text-center"><div class="flex items-center justify-end space-x-1"><button title="View Customer 360" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">person</span></button><button title="Book Appointment" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">calendar_month</span></button><button title="Send WhatsApp" class="p-1 text-on-surface-variant hover:text-[#2E7D32] hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">chat</span></button><button title="Transactions &amp; Billing" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">payments</span></button></div></td></tr><tr class="hover:bg-surface-container-low/50 transition-colors group cursor-pointer"><td class="py-3 px-md text-on-surface-variant">NX-552</td><td class="py-3 px-md"><div class="flex items-center space-x-sm"><div class="w-10 h-10 rounded-full flex items-center justify-center bg-[#E8F5E9] text-[#2E7D32] text-label-md font-label-md font-bold">LB</div><p class="text-on-surface font-semibold group-hover:text-primary-container transition-colors">Liam Bennett</p></div></td><td class="py-3 px-md text-on-surface">+91 9845678901</td><td class="py-3 px-md"><span class="inline-flex items-center px-2 py-1 rounded-full bg-primary-container/10 text-on-primary-container text-label-sm font-label-sm"><span class="material-symbols-outlined text-[12px] mr-1" style="font-variation-settings: 'FILL' 1;">star</span> Member</span></td><td class="py-3 px-md"><p class="text-on-surface">8</p></td><td class="py-3 px-md"><p class="text-on-surface">Nov 10, 2023</p></td><td class="py-3 px-md"><p class="text-on-surface">Sarah T.</p></td><td class="py-3 px-md"><span class="inline-flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-[#4CAF50]"></span><span class="text-label-sm font-label-sm text-on-surface-variant">Active</span></span></td><td class="py-3 px-md text-center"><div class="flex items-center justify-end space-x-1"><button title="View Customer 360" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">person</span></button><button title="Book Appointment" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">calendar_month</span></button><button title="Send WhatsApp" class="p-1 text-on-surface-variant hover:text-[#2E7D32] hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">chat</span></button><button title="Transactions &amp; Billing" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">payments</span></button></div></td></tr><tr class="hover:bg-surface-container-low/50 transition-colors group cursor-pointer"><td class="py-3 px-md text-on-surface-variant">NX-219</td><td class="py-3 px-md"><div class="flex items-center space-x-sm"><div class="w-10 h-10 rounded-full flex items-center justify-center bg-surface-container text-on-surface-variant text-label-md font-label-md font-bold">OC</div><p class="text-on-surface font-semibold group-hover:text-primary-container transition-colors">Olivia Chen</p></div></td><td class="py-3 px-md text-on-surface">+91 9756789012</td><td class="py-3 px-md"><span class="inline-flex items-center px-2 py-1 rounded-full bg-surface-container text-on-surface-variant text-label-sm font-label-sm">Guest</span></td><td class="py-3 px-md"><p class="text-on-surface">2</p></td><td class="py-3 px-md"><p class="text-on-surface">Nov 12, 2023</p></td><td class="py-3 px-md"><p class="text-on-surface">Elena G.</p></td><td class="py-3 px-md"><span class="inline-flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-[#4CAF50]"></span><span class="text-label-sm font-label-sm text-on-surface-variant">Active</span></span></td><td class="py-3 px-md text-center"><div class="flex items-center justify-end space-x-1"><button title="View Customer 360" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">person</span></button><button title="Book Appointment" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">calendar_month</span></button><button title="Send WhatsApp" class="p-1 text-on-surface-variant hover:text-[#2E7D32] hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">chat</span></button><button title="Transactions &amp; Billing" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">payments</span></button></div></td></tr><tr class="hover:bg-surface-container-low/50 transition-colors group cursor-pointer"><td class="py-3 px-md text-on-surface-variant">NX-774</td><td class="py-3 px-md"><div class="flex items-center space-x-sm"><div class="w-10 h-10 rounded-full flex items-center justify-center bg-[#FCE4EC] text-[#C2185B] text-label-md font-label-md font-bold">DW</div><p class="text-on-surface font-semibold group-hover:text-primary-container transition-colors">David Wilson</p></div></td><td class="py-3 px-md text-on-surface">+91 9867890123</td><td class="py-3 px-md"><span class="inline-flex items-center px-2 py-1 rounded-full bg-primary-container/10 text-on-primary-container text-label-sm font-label-sm"><span class="material-symbols-outlined text-[12px] mr-1" style="font-variation-settings: 'FILL' 1;">star</span> VIP Member</span></td><td class="py-3 px-md"><p class="text-on-surface">31</p></td><td class="py-3 px-md"><p class="text-on-surface">Oct 28, 2023</p></td><td class="py-3 px-md"><p class="text-on-surface">David R.</p></td><td class="py-3 px-md"><span class="inline-flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-[#4CAF50]"></span><span class="text-label-sm font-label-sm text-on-surface-variant">Active</span></span></td><td class="py-3 px-md text-center"><div class="flex items-center justify-end space-x-1"><button title="View Customer 360" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">person</span></button><button title="Book Appointment" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">calendar_month</span></button><button title="Send WhatsApp" class="p-1 text-on-surface-variant hover:text-[#2E7D32] hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">chat</span></button><button title="Transactions &amp; Billing" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">payments</span></button></div></td></tr><tr class="hover:bg-surface-container-low/50 transition-colors group cursor-pointer"><td class="py-3 px-md text-on-surface-variant">NX-108</td><td class="py-3 px-md"><div class="flex items-center space-x-sm"><div class="w-10 h-10 rounded-full flex items-center justify-center bg-[#E1F5FE] text-[#0288D1] text-label-md font-label-md font-bold">AM</div><p class="text-on-surface font-semibold group-hover:text-primary-container transition-colors">Ava Martinez</p></div></td><td class="py-3 px-md text-on-surface">+91 9978901234</td><td class="py-3 px-md"><span class="inline-flex items-center px-2 py-1 rounded-full bg-surface-container text-on-surface-variant text-label-sm font-label-sm">Guest</span></td><td class="py-3 px-md"><p class="text-on-surface">1</p></td><td class="py-3 px-md"><p class="text-on-surface">Nov 14, 2023</p></td><td class="py-3 px-md"><p class="text-on-surface">Sarah T.</p></td><td class="py-3 px-md"><span class="inline-flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-[#4CAF50]"></span><span class="text-label-sm font-label-sm text-on-surface-variant">Active</span></span></td><td class="py-3 px-md text-center"><div class="flex items-center justify-end space-x-1"><button title="View Customer 360" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">person</span></button><button title="Book Appointment" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">calendar_month</span></button><button title="Send WhatsApp" class="p-1 text-on-surface-variant hover:text-[#2E7D32] hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">chat</span></button><button title="Transactions &amp; Billing" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">payments</span></button></div></td></tr><tr class="hover:bg-surface-container-low/50 transition-colors group cursor-pointer"><td class="py-3 px-md text-on-surface-variant">NX-992</td><td class="py-3 px-md"><div class="flex items-center space-x-sm"><div class="w-10 h-10 rounded-full flex items-center justify-center bg-surface-container text-on-surface-variant text-label-md font-label-md font-bold">JR</div><p class="text-on-surface font-semibold group-hover:text-primary-container transition-colors">James Reed</p></div></td><td class="py-3 px-md text-on-surface">+91 9889012345</td><td class="py-3 px-md"><span class="inline-flex items-center px-2 py-1 rounded-full bg-primary-container/10 text-on-primary-container text-label-sm font-label-sm"><span class="material-symbols-outlined text-[12px] mr-1" style="font-variation-settings: 'FILL' 1;">star</span> Member</span></td><td class="py-3 px-md"><p class="text-on-surface">15</p></td><td class="py-3 px-md"><p class="text-on-surface">Oct 30, 2023</p></td><td class="py-3 px-md"><p class="text-on-surface">Elena G.</p></td><td class="py-3 px-md"><span class="inline-flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-outline-variant"></span><span class="text-label-sm font-label-sm text-on-surface-variant">Inactive</span></span></td><td class="py-3 px-md text-center"><div class="flex items-center justify-end space-x-1"><button title="View Customer 360" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">person</span></button><button title="Book Appointment" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">calendar_month</span></button><button title="Send WhatsApp" class="p-1 text-on-surface-variant hover:text-[#2E7D32] hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">chat</span></button><button title="Transactions &amp; Billing" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">payments</span></button></div></td></tr><tr class="hover:bg-surface-container-low/50 transition-colors group cursor-pointer border-b-0"><td class="py-3 px-md text-on-surface-variant">NX-334</td><td class="py-3 px-md"><div class="flex items-center space-x-sm"><div class="w-10 h-10 rounded-full flex items-center justify-center bg-[#E8F5E9] text-[#2E7D32] text-label-md font-label-md font-bold">ST</div><p class="text-on-surface font-semibold group-hover:text-primary-container transition-colors">Sophia Taylor</p></div></td><td class="py-3 px-md text-on-surface">+91 9790123456</td><td class="py-3 px-md"><span class="inline-flex items-center px-2 py-1 rounded-full bg-surface-container text-on-surface-variant text-label-sm font-label-sm">Guest</span></td><td class="py-3 px-md"><p class="text-on-surface">4</p></td><td class="py-3 px-md"><p class="text-on-surface">Nov 15, 2023</p></td><td class="py-3 px-md"><p class="text-on-surface">David R.</p></td><td class="py-3 px-md"><span class="inline-flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-[#4CAF50]"></span><span class="text-label-sm font-label-sm text-on-surface-variant">Active</span></span></td><td class="py-3 px-md text-center"><div class="flex items-center justify-end space-x-1"><button title="View Customer 360" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">person</span></button><button title="Book Appointment" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">calendar_month</span></button><button title="Send WhatsApp" class="p-1 text-on-surface-variant hover:text-[#2E7D32] hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">chat</span></button><button title="Transactions &amp; Billing" class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"><span class="material-symbols-outlined text-[18px]">payments</span></button></div></td></tr></tbody></table></div></div>
+<!-- Pagination footer -->
+<div class="border-t border-outline-variant/10 p-sm flex items-center justify-between bg-surface/30">
+<span class="text-label-sm font-label-sm text-on-surface-variant">Showing 1-10 of 1,284</span>
+<div class="flex space-x-1">
+<button class="p-1 rounded-md text-outline hover:bg-surface-container transition-colors disabled:opacity-50"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
+<button class="w-7 h-7 rounded-md bg-surface-container text-on-surface text-label-sm font-label-sm flex items-center justify-center">1</button>
+<button class="w-7 h-7 rounded-md hover:bg-surface-container text-on-surface-variant text-label-sm font-label-sm flex items-center justify-center transition-colors">2</button>
+<button class="w-7 h-7 rounded-md hover:bg-surface-container text-on-surface-variant text-label-sm font-label-sm flex items-center justify-center transition-colors">3</button>
+<button class="p-1 rounded-md text-on-surface-variant hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- Secondary Panel (Span 4) -->
+<div class="lg:col-span-4 flex flex-col space-y-md">
+<!-- Primary Action -->
+<div class="flex items-center space-x-sm bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-md py-2 shadow-ambient"><div class="flex items-center space-x-xs text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-primary">location_on</span><span class="text-label-md font-label-md font-semibold text-on-surface-variant uppercase">Branch:</span></div><div class="relative flex-1"><select class="w-full bg-transparent border-none text-body-sm font-body-sm font-medium text-on-surface py-1 pr-6 pl-1 focus:ring-0 cursor-pointer"><option selected="" value="all">All Branches</option><option value="downtown">Downtown Flagship</option><option value="beverly_hills">Beverly Hills</option></select></div></div><button class="w-full bg-primary-container text-on-primary-container hover:bg-[#b5985f] rounded-xl py-3 px-md flex items-center justify-center space-x-sm transition-colors shadow-sm font-headline-md text-[16px]">
+<span class="material-symbols-outlined">add</span>
+<span class="">Add Customer</span>
+</button>
+<!-- AI Insights Card (Glassmorphic) -->
+<div class="glass-panel rounded-xl p-md shadow-ambient relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container"></div>
+<div class="flex items-center space-x-2 mb-md">
+<span class="material-symbols-outlined text-primary-container">auto_awesome</span>
+<h3 class="text-headline-md text-[18px] font-headline-md text-on-surface">AI Insights</h3>
+</div>
+<ul class="space-y-sm">
+<li class="flex items-start space-x-3 text-body-sm font-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-[#2E7D32] mt-0.5">trending_up</span>
+<span class=""><strong>24 new customers</strong> joined this month, indicating strong referral growth.</span>
+</li>
+<li class="flex items-start space-x-3 text-body-sm font-body-sm text-on-surface-variant"><span class="material-symbols-outlined text-[18px] text-outline mt-0.5">schedule</span><div class="flex-1"><p class=""><strong>18 customers</strong> have not visited in over 60 days. Recommended action: Send re-engagement campaign.</p><div class="mt-2 flex items-center space-x-2"><button class="inline-flex items-center space-x-1 text-[12px] font-semibold text-primary hover:text-on-primary-container bg-primary-container/20 hover:bg-primary-container/30 px-2.5 py-1 rounded-md transition-colors"><span class="material-symbols-outlined text-[14px]">filter_list</span><span class="">Filter List</span></button><button class="inline-flex items-center space-x-1 text-[12px] font-semibold text-primary hover:underline"><span class="material-symbols-outlined text-[14px]">arrow_forward</span><span class="">View Customers</span></button></div></div></li>
+<li class="flex items-start space-x-3 text-body-sm font-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-primary-container mt-0.5">pie_chart</span>
+<span class=""><strong>42% of appointments</strong> come from active members.</span>
+</li>
+</ul>
+</div>
+<!-- Quick Actions -->
+<div class="flex flex-col space-y-md"><h3 class="text-label-md font-label-md text-on-surface-variant uppercase px-1 mb-sm">Quick Actions</h3>
+<div class="space-y-sm">
+  <button class="w-full flex items-center justify-between p-md bg-primary-container/10 rounded-xl border border-primary-container/20 hover:bg-primary-container/20 transition-colors group">
+    <div class="flex items-center space-x-md">
+      <div class="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center group-hover:bg-primary-container/30 transition-colors">
+        <span class="material-symbols-outlined text-primary-container text-[20px]">chat</span>
+      </div>
+      <span class="text-body-md font-semibold text-on-surface">Send WhatsApp Broadcast</span>
+    </div>
+    <span class="material-symbols-outlined text-primary-container text-[20px] opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+  </button>
+  <button class="w-full flex items-center justify-between p-md bg-primary-container/10 rounded-xl border border-primary-container/20 hover:bg-primary-container/20 transition-colors group">
+    <div class="flex items-center space-x-md">
+      <div class="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center group-hover:bg-primary-container/30 transition-colors">
+        <span class="material-symbols-outlined text-primary-container text-[20px]">card_membership</span>
+      </div>
+      <span class="text-body-md font-semibold text-on-surface">Manage Memberships</span>
+    </div>
+    <span class="material-symbols-outlined text-primary-container text-[20px] opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+  </button>
+  
+</div></div>
+</div>
+</div>
+</main>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body></html>

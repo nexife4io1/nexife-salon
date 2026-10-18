@@ -37,7 +37,7 @@ export async function getBranch(tenantId: string, branchId: string): Promise<Bra
 
 /** Active tenant services a branch can offer. */
 export function listServiceOptions(tenantId: string) {
-  return staffService.listServices(tenantId);
+  return tenantsService.listTenantServices(tenantId);
 }
 
 /** Reject ids that are not active services of this tenant (also stops cross-tenant ids). */

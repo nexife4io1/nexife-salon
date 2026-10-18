@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/format";
 import { AUDIENCE_LABELS } from "@/server/shared/audience";
-import type { SalonService } from "@/server/staff/schema";
+import type { TenantService } from "@/server/tenants/schema";
 
 /**
  * Checklist of the services a branch offers. Controlled; each checked row submits as a
@@ -17,7 +17,7 @@ export function BranchServiceChecklist({
   currency,
   disabled,
 }: {
-  options: SalonService[];
+  options: TenantService[];
   value: string[];
   onChange: (next: string[]) => void;
   currency: string;
