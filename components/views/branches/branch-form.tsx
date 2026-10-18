@@ -4,12 +4,12 @@ import { useActionState, useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
 import type { ActionResult } from "@/server/shared/result";
-import type { SalonService } from "@/server/staff/schema";
+import type { TenantService } from "@/server/tenants/schema";
 import { BranchServiceChecklist } from "./branch-service-checklist";
 
 type BranchFormAction = (prev: ActionResult | undefined, formData: FormData) => Promise<ActionResult>;
 
-export function BranchForm({ action, services, currency }: { action: BranchFormAction; services: SalonService[]; currency: string }) {
+export function BranchForm({ action, services, currency }: { action: BranchFormAction; services: TenantService[]; currency: string }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   // New branches start out offering every service; untick what this location does not do.
   const [offered, setOffered] = useState(() => services.map((s) => s.id));

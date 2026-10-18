@@ -32,6 +32,10 @@ export function listTenantUsers(tenantId: string): Promise<TenantUser[]> {
   return repo.listUsersByTenant(tenantId);
 }
 
+export async function listTenantServices(tenantId: string): Promise<TenantService[]> {
+  return (await repo.listTenantServices(tenantId)).filter((service) => service.active);
+}
+
 // --- Platform administration (callers must already have verified a platform admin) ---
 
 export function listTenantSummaries(): Promise<TenantSummary[]> {

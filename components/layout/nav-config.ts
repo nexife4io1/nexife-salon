@@ -19,7 +19,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "appointments", label: "Appointments", href: "/appointments", icon: "calendar", group: "operate" },
   { key: "customers", label: "Customers", href: "/customers", icon: "users", group: "operate" },
   { key: "billing", label: "Billing", href: "/billing", icon: "receipt", group: "operate" },
-  { key: "staff", label: "Staff & Services", href: "/staff", icon: "scissors", group: "manage" },
+  { key: "staff", label: "Staff", href: "/staff", icon: "scissors", group: "manage" },
   { key: "branches", label: "Branches", href: "/branches", icon: "store", group: "manage" },
   { key: "inventory", label: "Inventory", href: "/inventory", icon: "package", group: "manage" },
   { key: "finance", label: "Finance", href: "/finance", icon: "chart", group: "manage" },

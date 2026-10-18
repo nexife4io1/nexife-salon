@@ -1,70 +1,49 @@
 import type { Metadata } from "next";
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
+import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { SearchField } from "@/components/ui/search-field";
-import { TableShell, type TableColumn } from "@/components/ui/table-shell";
-import { PlaceholderNote } from "@/components/views/shared/placeholder-note";
-import { getCustomers } from "@/server/customers/queries";
+import { StatTile } from "@/components/ui/stat-tile";
+import { CustomersDirectory } from "@/components/views/customers/customers-directory";
+import { CustomersFilterBar } from "@/components/views/customers/customers-filters";
+import { DemoDataBadge } from "@/components/views/shared/demo-data-badge";
+import { getCustomerDirectory } from "@/server/customers/queries";
 
 export const metadata: Metadata = { title: "Customers" };
 
-type CustomerRow = Awaited<ReturnType<typeof getCustomers>>[number];
-
-const CUSTOMER_COLUMNS: TableColumn<CustomerRow>[] = [
-  {
-    key: "name",
-    header: "Name",
-    cellClassName: "font-semibold text-on-surface",
-    renderCell: (customer) => customer.name,
-  },
-  {
-    key: "phone",
-    header: "Phone",
-    cellClassName: "text-secondary",
-    renderCell: (customer) => customer.phone ?? "-",
-  },
-  {
-    key: "email",
-    header: "Email",
-    cellClassName: "text-secondary",
-    renderCell: (customer) => customer.email ?? "-",
-  },
-  {
-    key: "visits",
-    header: "Visits",
-    renderCell: (customer) => customer.visitCount,
-  },
-];
-
-export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { q } = await searchParams;
-  const customers = await getCustomers(q);
+export default async function CustomersPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { customers, stats, filters, filtered, source, page, pageCount, matching, pageSize } = await getCustomerDirectory(await searchParams);
+  const readOnly = source === "demo";
 
   return (
     <>
       <PageHeader
         title="Customers"
-        description="Your client book — contact details, visit history and preferences."
+        description="Your client book — contact details and visit counts."
+        meta={<DemoDataBadge source={source} />}
         actions={
-          <Button icon="plus" disabled title="Arrives in step 5">
-            Add Customer
-          </Button>
+          readOnly ? undefined : (
+            <ButtonLink href="/customers/new" icon="plus">
+              Add Customer
+            </ButtonLink>
+          )
         }
       />
-      <PlaceholderNote step="step 5 (Customers)">
-        Client profiles, visit history, notes and phone de-duplication via server/customers.
-      </PlaceholderNote>
 
-      <form className="mb-4 max-w-md" role="search">
-        <SearchField name="q" defaultValue={q} placeholder="Search by name…" aria-label="Search customers" />
-      </form>
+      <section aria-label="Customer summary" className="mb-8 grid grid-cols-1 gap-gutter sm:grid-cols-3">
+        <StatTile label="Total customers" value={stats.total} icon="users" />
+        <StatTile label="New this month" value={stats.newThisMonth} icon="trending-up" />
+        <StatTile label="Returning" value={stats.returning} hint="Two or more visits" icon="user" />
+      </section>
 
-      <TableShell
-        columns={CUSTOMER_COLUMNS}
-        rows={customers}
-        rowKey={(customer) => customer.id}
-        empty={<EmptyState icon="users" title={q ? "No matches" : "No customers yet"} description="Clients you add or book will appear here." />}
+      <CustomersFilterBar filters={filters} />
+      <CustomersDirectory
+        customers={customers}
+        filters={filters}
+        filtered={filtered}
+        readOnly={readOnly}
+        page={page}
+        pageCount={pageCount}
+        matching={matching}
+        pageSize={pageSize}
       />
     </>
   );
