@@ -56,11 +56,27 @@ export const fixtureUsers: ReadonlyArray<{
 ];
 
 export const fixtureServices = [
-  { tenantId: meridian.id, name: "Signature Cut & Style", category: "Hair", durationMinutes: 60, priceCents: 9_500 },
-  { tenantId: meridian.id, name: "Balayage", category: "Color", durationMinutes: 150, priceCents: 28_000 },
-  { tenantId: meridian.id, name: "Gloss Treatment", category: "Care", durationMinutes: 45, priceCents: 6_500 },
-  { tenantId: broBarber.id, name: "Classic Fade", category: "Hair", durationMinutes: 30, priceCents: 3_500 },
-  { tenantId: broBarber.id, name: "Beard Sculpt", category: "Grooming", durationMinutes: 20, priceCents: 2_000 },
+  { tenantId: meridian.id, name: "Signature Cut & Style", audience: "women" as const, category: "Hair", durationMinutes: 60, priceCents: 9_500 },
+  { tenantId: meridian.id, name: "Balayage", audience: "women" as const, category: "Color", durationMinutes: 150, priceCents: 28_000 },
+  { tenantId: meridian.id, name: "Gloss Treatment", audience: "unisex" as const, category: "Care", durationMinutes: 45, priceCents: 6_500 },
+  { tenantId: broBarber.id, name: "Classic Fade", audience: "men" as const, category: "Hair", durationMinutes: 30, priceCents: 3_500 },
+  { tenantId: broBarber.id, name: "Beard Sculpt", audience: "men" as const, category: "Grooming", durationMinutes: 20, priceCents: 2_000 },
+] as const;
+
+/** Fixed creation date for fixture tenants (the tenants rows themselves get `now()` when seeded). */
+export const fixtureTenantCreatedAt = "2026-01-12T09:00:00.000Z";
+
+/** Platform-level service catalog that tenant admins pick from when onboarding. */
+export const fixtureServiceTemplates = [
+  { id: "c7e1a5d0-3b2f-4a6e-9c1d-000000000001", name: "Haircut", audience: "unisex" as const, category: "Hair", defaultDurationMinutes: 45, defaultPriceCents: 5_500 },
+  { id: "c7e1a5d0-3b2f-4a6e-9c1d-000000000002", name: "Blow Dry & Style", audience: "women" as const, category: "Hair", defaultDurationMinutes: 30, defaultPriceCents: 4_000 },
+  { id: "c7e1a5d0-3b2f-4a6e-9c1d-000000000003", name: "Full Colour", audience: "women" as const, category: "Color", defaultDurationMinutes: 120, defaultPriceCents: 14_000 },
+  { id: "c7e1a5d0-3b2f-4a6e-9c1d-000000000004", name: "Highlights", audience: "women" as const, category: "Color", defaultDurationMinutes: 150, defaultPriceCents: 18_000 },
+  { id: "c7e1a5d0-3b2f-4a6e-9c1d-000000000005", name: "Beard Trim", audience: "men" as const, category: "Grooming", defaultDurationMinutes: 20, defaultPriceCents: 2_000 },
+  { id: "c7e1a5d0-3b2f-4a6e-9c1d-000000000006", name: "Manicure", audience: "women" as const, category: "Nails", defaultDurationMinutes: 40, defaultPriceCents: 3_500 },
+  { id: "c7e1a5d0-3b2f-4a6e-9c1d-000000000007", name: "Facial", audience: "unisex" as const, category: "Skin", defaultDurationMinutes: 60, defaultPriceCents: 8_000 },
+  { id: "c7e1a5d0-3b2f-4a6e-9c1d-000000000009", name: "Kids Haircut", audience: "kids" as const, category: "Hair", defaultDurationMinutes: 30, defaultPriceCents: 3_000 },
+  { id: "c7e1a5d0-3b2f-4a6e-9c1d-000000000008", name: "Deep Conditioning Treatment", audience: "unisex" as const, category: "Care", defaultDurationMinutes: 30, defaultPriceCents: 4_500 },
 ] as const;
 
 export const DEFAULT_DEMO_PASSWORD = "nexife-demo";

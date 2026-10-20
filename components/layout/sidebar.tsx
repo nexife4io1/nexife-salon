@@ -126,7 +126,7 @@ export function Sidebar({ allowed, tenantName }: { allowed: string[]; tenantName
         aria-modal={navOpen ? true : undefined}
         aria-labelledby={navOpen ? "primary-navigation-title" : undefined}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-sidebar flex-col border-r border-outline-variant/15 bg-surface shadow-sm transition-transform duration-300 lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-sidebar print:hidden flex-col border-r border-outline-variant/15 bg-surface shadow-sm transition-transform duration-300 lg:translate-x-0",
           navOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -150,7 +150,9 @@ export function Sidebar({ allowed, tenantName }: { allowed: string[]; tenantName
 
         <ul className="flex-1 space-y-1 overflow-y-auto py-2">
           {items.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const matches = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+            // Nested nav items (/platform vs /platform/services): only the most specific one is active.
+            const active = matches(item.href) && !items.some((other) => other.href.length > item.href.length && matches(other.href));
 
             if (item.kind === "feature") {
               return (

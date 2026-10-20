@@ -9,11 +9,12 @@
  */
 import { hashPassword } from "../../lib/password";
 import { getDb, isDatabaseConfigured } from "../client";
-import { branches, services, staff, tenants, users } from "../schema";
+import { branches, serviceTemplates, services, staff, tenants, users } from "../schema";
 import {
   demoPassword,
   fixtureBranchActivity,
   fixtureBranches,
+  fixtureServiceTemplates,
   fixtureServices,
   fixtureTenants,
   fixtureUsers,
@@ -36,6 +37,7 @@ async function main() {
       .insert(users)
       .values(fixtureUsers.map((u) => ({ ...u, passwordHash })))
       .onConflictDoNothing();
+    await tx.insert(serviceTemplates).values([...fixtureServiceTemplates]).onConflictDoNothing();
     await tx.insert(services).values([...fixtureServices]).onConflictDoNothing();
 
     const staffRows = fixtureBranches.flatMap((branch, branchIndex) => {
@@ -56,7 +58,7 @@ async function main() {
     await tx.insert(staff).values(staffRows).onConflictDoNothing();
   });
 
-  console.log(`Seeded ${fixtureTenants.length} tenants, ${fixtureBranches.length} branches, ${fixtureUsers.length} users.`);
+  console.log(`Seeded ${fixtureTenants.length} tenants, ${fixtureBranches.length} branches, ${fixtureUsers.length} users, ${fixtureServiceTemplates.length} service templates.`);
   process.exit(0);
 }
 

@@ -1,0 +1,353 @@
+<!DOCTYPE html><html class="light" lang="en" style="width: 1280px; height: 2019px; overflow: hidden; position: relative;"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Nexife - Customer Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#fbf9f8",
+                        "inverse-on-surface": "#f2f0f0",
+                        "surface-tint": "#735b24",
+                        "secondary-container": "#e4e2e1",
+                        "on-primary-container": "#533d07",
+                        "tertiary-container": "#acadab",
+                        "surface-variant": "#e4e2e2",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#e4e2e2",
+                        "primary-fixed-dim": "#e3c281",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#c6c7c5",
+                        "error-container": "#ffdad6",
+                        "primary": "#735b24",
+                        "background": "#fbf9f8",
+                        "on-tertiary-fixed-variant": "#454746",
+                        "on-secondary-fixed-variant": "#474747",
+                        "on-error": "#ffffff",
+                        "on-surface": "#1b1c1c",
+                        "surface-dim": "#dbdad9",
+                        "on-secondary-container": "#656464",
+                        "on-secondary-fixed": "#1b1c1c",
+                        "secondary": "#5f5e5e",
+                        "tertiary": "#5d5f5d",
+                        "tertiary-fixed": "#e2e3e1",
+                        "surface-container-high": "#e9e8e7",
+                        "surface-bright": "#fbf9f8",
+                        "primary-container": "#c8a96a",
+                        "inverse-surface": "#303031",
+                        "on-tertiary-container": "#3f4140",
+                        "primary-fixed": "#ffdf9f",
+                        "on-primary-fixed": "#261a00",
+                        "surface-container-low": "#f5f3f3",
+                        "secondary-fixed": "#e4e2e1",
+                        "outline": "#7f7668",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed-variant": "#5a430e",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#1a1c1b",
+                        "secondary-fixed-dim": "#c8c6c6",
+                        "on-surface-variant": "#4d463a",
+                        "outline-variant": "#d0c5b5",
+                        "surface-container": "#efeded",
+                        "on-background": "#1b1c1c",
+                        "inverse-primary": "#e3c281"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "24px",
+                        "base": "8px",
+                        "gutter": "24px",
+                        "sm": "12px",
+                        "xs": "4px",
+                        "xl": "80px",
+                        "margin-desktop": "40px",
+                        "margin-mobile": "16px",
+                        "lg": "48px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Manrope"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Manrope"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "display-lg": ["Manrope"],
+                        "headline-lg": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #fbf9f8; }
+        .ambient-shadow { box-shadow: 0 4px 20px rgba(27, 28, 28, 0.04); }
+        .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(208, 197, 181, 0.2); }
+        .ai-border-left { border-left: 3px solid #c8a96a; }
+    </style>
+</head>
+<body class="text-on-surface antialiased flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<nav class="hidden md:flex bg-surface dark:bg-surface-dim fixed left-0 top-0 h-full w-64 border-r border-outline-variant/10 shadow-sm flex-col py-lg px-md z-50">
+<div class="mb-lg">
+  <span class="font-display-lg text-headline-md font-bold tracking-tight text-primary">Nexife</span>
+  <p class="font-label-md text-xs uppercase tracking-widest text-secondary mt-1">SALON MANAGEMENT</p>
+</div>
+<div class="flex-1 overflow-y-auto space-y-2">
+<a class="flex items-center gap-sm px-4 py-3 rounded-lg text-secondary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-label-md font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-sm px-4 py-3 rounded-lg text-secondary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span class="text-label-md font-label-md">Appointments</span>
+</a>
+<a class="flex items-center gap-sm px-4 py-3 rounded-lg text-primary border-l-4 border-primary bg-primary-container/10" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="text-label-md font-label-md">Customers</span>
+</a>
+<a class="flex items-center gap-sm px-4 py-3 rounded-lg text-secondary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="text-label-md font-label-md">Billing</span>
+</a>
+<a class="flex items-center gap-sm px-4 py-3 rounded-lg text-secondary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span class="text-label-md font-label-md">Staff</span>
+</a>
+<a class="flex items-center gap-sm px-4 py-3 rounded-lg text-secondary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="text-label-md font-label-md">Reports</span>
+</a>
+<a class="flex items-center gap-sm px-4 py-3 rounded-lg text-secondary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="location_on">location_on</span>
+<span class="text-label-md font-label-md">Branches</span>
+</a>
+<div class="mt-8 mb-4 border-t border-outline-variant/10 pt-4"></div>
+<a class="flex items-center gap-sm px-4 py-3 rounded-lg text-secondary hover:bg-surface-container-high transition-colors duration-200 relative group" href="#">
+<div class="absolute inset-0 bg-gradient-to-r from-primary-container/10 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<span class="material-symbols-outlined text-primary-container" data-icon="auto_awesome">auto_awesome</span>
+<span class="text-label-md font-label-md relative z-10 group-hover:text-primary transition-colors">AI Style Studio</span>
+<span class="absolute right-2 w-1 h-4 bg-primary-container rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
+</a>
+<a class="flex items-center gap-sm px-4 py-3 rounded-lg text-secondary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+<span class="text-label-md font-label-md">WhatsApp Center</span>
+</a>
+<a class="flex items-center gap-sm px-4 py-3 rounded-lg text-secondary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</a>
+</div>
+
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden bg-background relative">
+<!-- TopAppBar -->
+<header class="bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-md sticky top-0 z-40 w-full flex justify-between items-center h-20 px-margin-desktop border-b border-outline-variant/10 shadow-sm flex-shrink-0">
+<div class="flex items-center gap-4 w-96">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-[20px]">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 text-body-sm font-body-sm focus:ring-2 focus:ring-primary-container focus:bg-surface transition-all" placeholder="Search customers, appointments..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-2 text-secondary hover:text-on-surface hover:bg-surface-container-low rounded-full transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-secondary hover:text-on-surface hover:bg-surface-container-low rounded-full transition-all">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-high overflow-hidden border border-outline-variant/20 ml-2">
+<img alt="Salon Manager Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a stylish salon manager, soft studio lighting, modern minimalist aesthetic, soft neutral background, high resolution photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCc7JH4-6EJtrauAgn0qYIIxkhPYBzBLUXFvhi-7IQ1YAjCNDxCiVGv_xw7yL2cP5cbZ7S3cekAGRKqTyKTEN1SHo1Czdlvoq-RM_qfG-H1flGnP1hmMoHGvMoVmtAW7ZhaxIm1GsIM6NIgkVPnHA7kMP_wzgtHIWeU3VTi2yIvML4pb_cfwD9kD_Az469A_PJk7flI0tdbIrKnR4VEQhT_MAfVY_23Mdi4tcAUb9NiTjmspfX0rDUQeg">
+</div>
+</div>
+</header>
+<!-- Scrollable Content Canvas -->
+<main class="flex-1 overflow-y-auto p-margin-desktop">
+<div class="max-w-[1440px] mx-auto space-y-md pb-xl">
+<!-- Breadcrumbs & Header -->
+<div>
+<p class="text-label-sm font-label-sm text-secondary mb-2 flex items-center gap-1">
+<a class="hover:text-primary transition-colors" href="#">Customers</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-on-surface">Customer 360</span>
+</p>
+<h2 class="text-headline-lg font-headline-lg text-on-surface">Customer 360</h2>
+</div>
+<!-- Profile Header Card -->
+<div class="bg-white rounded-xl p-md ambient-shadow flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+<div class="flex items-center gap-6">
+<div class="w-24 h-24 rounded-full overflow-hidden border-4 border-surface shadow-sm relative">
+<img class="w-full h-full object-cover" data-alt="A sophisticated portrait of a young elegant woman named Sophia Loren, soft natural light illuminating her face, wearing a chic neutral silk top, clean modern background, high fashion photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYfsr3gaW__te05Etif0Rn96TKsCbiYIYpWedvnpdSijSMwsCNcWjxoMwSfNi8u4FWwADbTeJKw0eQ5z0fnxRnj7-cJqpsTHax2tYOPd0czw7-A1pKZg5eANaTcoYzbvhuG75bG1qrK2liaJWIi4CZ5465jpK9YW09oqbMxjeseNjBKiJ845wYyRA9OlbG9lFiWK9TnsgFKmx2yj4sjxX76PyjBG3XfrVZn9Sl39uw0H92KzVMMqWgUg">
+</div>
+<div>
+<div class="flex items-center gap-3 mb-1">
+<h3 class="text-headline-md font-headline-md text-on-surface">Sophia Loren</h3>
+<span class="bg-primary-container/20 text-on-primary-container text-label-sm font-label-sm px-2 py-0.5 rounded-full">VIP Member</span>
+<span class="bg-green-100 text-green-800 text-label-sm font-label-sm px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Active
+                                </span>
+</div>
+<p class="text-body-sm font-body-sm text-secondary flex items-center gap-4">
+<span class="">ID: NX-402</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">phone_iphone</span> +91 9845012345</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">mail</span> sophia.l@example.com</span>
+</p>
+</div>
+</div>
+<div class="flex items-center gap-3 w-full md:w-auto">
+<button class="flex-1 md:flex-none px-4 py-2 bg-transparent border border-outline-variant text-on-surface font-label-md text-label-md rounded-lg hover:bg-surface-container-low transition-colors">Edit Customer</button>
+<button class="flex-1 md:flex-none px-4 py-2 bg-primary-container text-on-primary-container font-label-md text-label-md font-bold rounded-lg hover:bg-primary-fixed transition-colors shadow-sm">Book Appointment</button>
+<button class="p-2 border border-outline-variant text-secondary rounded-lg hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- 2 Column Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column (Main Content) -->
+<div class="lg:col-span-8 space-y-md">
+<!-- KPIs -->
+<div class="bg-white p-4 rounded-xl ambient-shadow"><div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-primary-container">query_stats</span><span class="text-label-md font-label-md font-bold uppercase tracking-wider text-secondary">Visit Intelligence</span></div><span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-container/10 text-primary uppercase">Updated Today</span></div><div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-1"><div class="p-3 bg-surface-container-low rounded-lg"><p class="text-label-sm font-label-sm text-secondary mb-1">Last Visit</p><p class="text-headline-sm font-bold text-on-surface">Oct 24</p><p class="text-label-sm font-label-sm text-tertiary">2023</p></div><div class="p-3 bg-surface-container-low rounded-lg"><p class="text-label-sm font-label-sm text-secondary mb-1">Visit Frequency</p><p class="text-headline-sm font-bold text-on-surface">22 <span class="text-xs font-normal text-secondary">days</span></p><p class="text-[11px] text-green-800 font-medium">Consistent</p></div><div class="p-3 bg-surface-container-low rounded-lg"><p class="text-label-sm font-label-sm text-secondary mb-1">Total Visits</p><p class="text-headline-sm font-bold text-on-surface">45</p><p class="text-[11px] text-secondary">All branches</p></div><div class="p-3 bg-surface-container-low rounded-lg"><p class="text-label-sm font-label-sm text-secondary mb-1">Lifetime Spend</p><p class="text-headline-sm font-bold text-on-surface whitespace-nowrap">₹24,500</p><p class="text-[11px] text-primary font-medium">Top 5% Spender</p></div><div class="p-3 bg-surface-container-low rounded-lg"><p class="text-label-sm font-label-sm text-secondary mb-1">Average Spend</p><p class="text-headline-sm font-bold text-on-surface whitespace-nowrap">₹1,850</p><p class="text-[11px] text-secondary">per visit</p></div></div></div>
+<!-- Visit History -->
+<div class="bg-white rounded-xl ambient-shadow overflow-hidden">
+<div class="p-6 border-b border-outline-variant/10 flex justify-between items-center">
+<h3 class="text-headline-md font-headline-md text-on-surface">Visit History</h3>
+<button class="text-primary text-label-md font-label-md hover:underline">View All</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-label-sm font-label-sm text-secondary uppercase tracking-wider">
+<th class="py-3 px-6 font-medium">Date</th>
+<th class="py-3 px-6 font-medium">Branch</th>
+<th class="py-3 px-6 font-medium">Staff</th>
+<th class="py-3 px-6 font-medium">Services</th>
+<th class="py-3 px-6 font-medium">Amount</th>
+<th class="py-3 px-6 font-medium">Status</th>
+</tr>
+</thead>
+<tbody class="text-body-sm font-body-sm text-on-surface divide-y divide-outline-variant/10">
+<tr class="hover:bg-surface/50 transition-colors">
+<td class="py-4 px-6">Oct 24, 2023</td>
+<td class="py-4 px-6 text-secondary">Downtown</td>
+<td class="py-4 px-6">Elena R.</td>
+<td class="py-4 px-6">Balayage, Trim</td>
+<td class="py-4 px-6 font-medium">₹6,500</td>
+<td class="py-4 px-6"><span class="bg-green-100 text-green-800 text-[10px] uppercase font-bold px-2 py-1 rounded-sm">Completed</span></td>
+</tr>
+<tr class="hover:bg-surface/50 transition-colors">
+<td class="py-4 px-6">Sep 12, 2023</td>
+<td class="py-4 px-6 text-secondary">Downtown</td>
+<td class="py-4 px-6">Elena R.</td>
+<td class="py-4 px-6">Hair Spa, Styling</td>
+<td class="py-4 px-6 font-medium">₹3,200</td>
+<td class="py-4 px-6"><span class="bg-green-100 text-green-800 text-[10px] uppercase font-bold px-2 py-1 rounded-sm">Completed</span></td>
+</tr>
+<tr class="hover:bg-surface/50 transition-colors">
+<td class="py-4 px-6">Aug 05, 2023</td>
+<td class="py-4 px-6 text-secondary">Westside</td>
+<td class="py-4 px-6">Sarah T.</td>
+<td class="py-4 px-6">Color Touch-up</td>
+<td class="py-4 px-6 font-medium">₹2,800</td>
+<td class="py-4 px-6"><span class="bg-green-100 text-green-800 text-[10px] uppercase font-bold px-2 py-1 rounded-sm">Completed</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- AI Style Studio Card -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-white rounded-xl ambient-shadow p-5 border border-outline-variant/10"><div class="flex items-center justify-between mb-4 border-b border-outline-variant/10 pb-3"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[20px] text-primary-container">spa</span><h3 class="text-headline-sm font-bold text-on-surface text-[16px]">Services</h3></div><span class="text-[11px] font-semibold text-secondary uppercase tracking-wider">Service Affinity</span></div><div class="space-y-3 mb-4"><p class="text-label-sm font-bold text-secondary uppercase tracking-wider">Most Used Services</p><div class="flex items-center justify-between text-body-sm"><span class="font-medium text-on-surface flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span> Balayage &amp; Hair Spa</span><span class="text-xs font-semibold px-2 py-0.5 bg-surface-container-low rounded text-secondary">18 visits</span></div><div class="flex items-center justify-between text-body-sm"><span class="font-medium text-on-surface flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span> Signature Haircut &amp; Styling</span><span class="text-xs font-semibold px-2 py-0.5 bg-surface-container-low rounded text-secondary">15 visits</span></div><div class="flex items-center justify-between text-body-sm"><span class="font-medium text-on-surface flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span> Keratin Gloss Treatment</span><span class="text-xs font-semibold px-2 py-0.5 bg-surface-container-low rounded text-secondary">8 visits</span></div></div><div class="pt-3 border-t border-outline-variant/10"><p class="text-label-sm font-bold text-secondary uppercase tracking-wider mb-2">Preferred Stylists</p><div class="flex flex-wrap gap-2"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-container-low rounded-lg text-body-sm"><span class="material-symbols-outlined text-[15px] text-primary">person</span> Elena R. <span class="text-[11px] text-secondary">(Senior Stylist)</span></span><span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-container-low rounded-lg text-body-sm"><span class="material-symbols-outlined text-[15px] text-primary">person</span> Arjun Menon</span></div></div></div><div class="bg-white rounded-xl ambient-shadow p-5 border border-outline-variant/10"><div class="flex items-center justify-between mb-4 border-b border-outline-variant/10 pb-3"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[20px] text-primary-container">shopping_bag</span><h3 class="text-headline-sm font-bold text-on-surface text-[16px]">Products</h3></div><span class="text-[11px] font-semibold text-secondary uppercase tracking-wider">Retail History</span></div><div class="space-y-3 mb-4"><p class="text-label-sm font-bold text-secondary uppercase tracking-wider">Products Purchased</p><div class="flex items-center justify-between text-body-sm"><div class="pr-2"><p class="font-medium text-on-surface text-xs leading-tight">L'Oréal Professional Absolut Repair</p><p class="text-[11px] text-secondary">Shampoo • 3 purchases</p></div><span class="text-[11px] font-semibold text-primary">Active User</span></div><div class="flex items-center justify-between text-body-sm"><div class="pr-2"><p class="font-medium text-on-surface text-xs leading-tight">Kérastase Elixir Ultime</p><p class="text-[11px] text-secondary">Hair Serum • 2 purchases</p></div><span class="text-[11px] font-semibold text-primary">Active User</span></div></div><div class="pt-3 border-t border-outline-variant/10"><p class="text-label-sm font-bold text-secondary uppercase tracking-wider mb-2">Recommended Products</p><div class="space-y-1.5"><div class="p-2 bg-surface-container-low rounded-lg text-xs flex items-start gap-1.5"><span class="material-symbols-outlined text-[16px] text-primary mt-0.5">recommend</span><div><span class="font-semibold text-on-surface">L'Oréal Absolut Repair Mask</span><p class="text-[11px] text-secondary">Recommended based on balayage care cycle</p></div></div><div class="p-2 bg-surface-container-low rounded-lg text-xs flex items-start gap-1.5"><span class="material-symbols-outlined text-[16px] text-primary mt-0.5">recommend</span><div><span class="font-semibold text-on-surface">Wella Fusion Conditioner</span><p class="text-[11px] text-secondary">Recommended for color longevity</p></div></div></div></div></div></div><div class="bg-white rounded-xl ambient-shadow p-5 border border-outline-variant/10"><div class="flex items-center justify-between mb-4 border-b border-outline-variant/10 pb-3"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[20px] text-primary-container">star</span><h3 class="text-headline-sm font-bold text-on-surface text-[16px]">Feedback</h3></div><div class="flex items-center gap-1.5"><div class="flex text-primary text-[15px]"><span class="material-symbols-outlined text-[16px]">star</span><span class="material-symbols-outlined text-[16px]">star</span><span class="material-symbols-outlined text-[16px]">star</span><span class="material-symbols-outlined text-[16px]">star</span><span class="material-symbols-outlined text-[16px]">star</span></div><span class="text-body-sm font-bold text-on-surface">4.8</span><span class="text-label-sm text-secondary">(12 reviews)</span></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-3"><div class="p-3 bg-surface-container-low rounded-lg text-body-sm flex flex-col justify-between"><p class="text-xs text-on-surface italic mb-2">“Very happy with the haircut and balayage tone. Elena was amazing!”</p><div class="flex items-center justify-between text-[11px] text-secondary pt-2 border-t border-outline-variant/10"><span class="">Oct 2023 • Balayage Service</span><span class="text-primary font-bold">★ 5.0</span></div></div><div class="p-3 bg-surface-container-low rounded-lg text-body-sm flex flex-col justify-between"><p class="text-xs text-on-surface italic mb-2">“Stylist understood exactly what I wanted for my curls. Great experience.”</p><div class="flex items-center justify-between text-[11px] text-secondary pt-2 border-t border-outline-variant/10"><span class="">Aug 2023 • Haircut &amp; Styling</span><span class="text-primary font-bold">★ 5.0</span></div></div></div></div><div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-surface to-[#fdfbf7] border border-primary-container/20 ambient-shadow p-8 flex items-center justify-between">
+<div class="absolute right-0 top-0 w-64 h-full opacity-10 pointer-events-none">
+<span class="material-symbols-outlined text-[200px] text-primary-container absolute -right-10 -top-10 transform rotate-12">auto_awesome</span>
+</div>
+<div class="relative z-10 max-w-lg">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary-container">auto_awesome</span>
+<h3 class="text-headline-md font-headline-md text-on-surface">AI Style Studio</h3>
+<span class="bg-primary-container/20 text-on-primary-container text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider ml-2">Powered by AI</span>
+</div>
+<p class="text-body-md font-body-md text-secondary mb-6 leading-relaxed">
+                                    Preview hairstyles tailored to Sophia's face shape and past preferences before booking. Generate personalized lookbooks instantly.
+                                </p>
+<button class="px-6 py-2.5 bg-primary-container text-on-primary-container font-label-md text-label-md font-bold rounded-lg hover:bg-primary-fixed transition-colors shadow-sm inline-flex items-center gap-2">
+                                    Launch Style Studio
+                                    <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Right Column (Sidebar Insights) -->
+<div class="lg:col-span-4 space-y-md">
+<!-- Smart Insights -->
+<div class="glass-panel rounded-xl p-5 ai-border-left ambient-shadow"><div class="flex items-center justify-between mb-4"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary-container text-[20px]">auto_awesome</span><h3 class="text-label-md font-label-md font-bold text-on-surface uppercase tracking-widest">AI Customer Intelligence</h3></div><span class="bg-primary-container/20 text-on-primary-container text-[10px] font-bold px-2 py-0.5 rounded uppercase">Live Insights</span></div><div class="space-y-3"><div class="bg-surface/60 p-3 rounded-lg border border-outline-variant/10"><div class="flex items-center justify-between mb-1"><p class="text-label-sm font-label-sm text-secondary">Customer Value</p><span class="bg-green-100 text-green-800 text-[10px] font-bold px-1.5 py-0.5 rounded">High</span></div><p class="text-body-sm font-semibold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-primary">workspace_premium</span> High-value returning VIP</p></div><div class="bg-surface/60 p-3 rounded-lg border border-outline-variant/10 relative overflow-hidden"><div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500"></div><div class="flex items-center justify-between mb-1"><p class="text-label-sm font-label-sm text-secondary">Retention Risk</p><span class="text-[11px] font-bold text-green-800">0.12 score</span></div><p class="text-body-sm font-semibold text-green-800 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-green-500">verified_user</span> Low — Highly engaged</p></div><div class="bg-surface/60 p-3 rounded-lg border border-outline-variant/10"><p class="text-label-sm font-label-sm text-secondary mb-1">Rebooking Recommendation</p><p class="text-body-sm font-medium text-on-surface leading-snug flex items-start gap-2"><span class="material-symbols-outlined text-[16px] text-primary-container mt-0.5">event_repeat</span> Due for color touch-up &amp; hair spa within 8 days based on 22-day cycle.</p></div><div class="bg-surface/60 p-3 rounded-lg border border-primary-container/30 bg-gradient-to-r from-primary-container/10 to-transparent"><p class="text-label-sm font-label-sm text-primary font-bold mb-1 flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">local_offer</span> Suggested Offer</p><p class="text-body-sm font-semibold text-on-surface leading-snug">10% off complimentary gloss treatment on next appointment.</p></div></div></div>
+<!-- Quick Actions -->
+<div class="bg-white rounded-xl p-6 ambient-shadow">
+<h3 class="text-headline-sm font-headline-md text-on-surface mb-4">Quick Actions</h3>
+<div class="space-y-2">
+<button class="w-full flex items-center gap-3 p-3 text-left hover:bg-surface-container-low rounded-lg transition-colors group">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-primary-container/20 transition-colors">
+<span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-primary">event_available</span>
+</div>
+<span class="text-body-sm font-body-sm font-medium text-on-surface">Book Appointment</span>
+</button>
+<button class="w-full flex items-center gap-3 p-3 text-left hover:bg-surface-container-low rounded-lg transition-colors group">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-primary-container/20 transition-colors">
+<span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-primary">receipt_long</span>
+</div>
+<span class="text-body-sm font-body-sm font-medium text-on-surface">Create Billing</span>
+</button>
+<button class="w-full flex items-center gap-3 p-3 text-left hover:bg-surface-container-low rounded-lg transition-colors group">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-[#25D366]/20 transition-colors">
+<span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-[#25D366]">chat</span>
+</div>
+<span class="text-body-sm font-body-sm font-medium text-on-surface">Send WhatsApp Message</span>
+</button>
+<button class="w-full flex items-center gap-3 p-3 text-left hover:bg-surface-container-low rounded-lg transition-colors group">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-primary-container/20 transition-colors">
+<span class="material-symbols-outlined text-[18px] text-secondary group-hover:text-primary">local_offer</span>
+</div>
+<span class="text-body-sm font-body-sm font-medium text-on-surface">Send Promotional Offer</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+
+
+
+
+
+
+
+
+
+</body></html>

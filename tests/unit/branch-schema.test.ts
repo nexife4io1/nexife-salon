@@ -13,6 +13,11 @@ describe("createBranchInputSchema", () => {
     expect(parsed.phone).toBeUndefined();
   });
 
+  it("defaults to no services and validates service ids", () => {
+    expect(createBranchInputSchema.parse({ name: "Downtown", addressLine: "124 Main St" }).serviceIds).toEqual([]);
+    expect(createBranchInputSchema.safeParse({ name: "Downtown", addressLine: "124 Main St", serviceIds: ["nope"] }).success).toBe(false);
+  });
+
   it("rejects a missing name", () => {
     expect(createBranchInputSchema.safeParse({ name: "", addressLine: "124 Main St" }).success).toBe(false);
   });

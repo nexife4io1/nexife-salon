@@ -1,0 +1,550 @@
+<!DOCTYPE html><html class="light" lang="en" style="width: 1280px; height: 1024px; overflow: hidden; position: relative;"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Nexife - Book Appointment</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "primary": "#735b24",
+          "primary-container": "#c8a96a",
+          "on-primary": "#ffffff",
+          "on-primary-container": "#3f300c",
+          "surface": "#fbf9f8",
+          "surface-container-lowest": "#ffffff",
+          "surface-container-low": "#f5f3f3",
+          "surface-container": "#efeded",
+          "surface-container-high": "#e9e8e7",
+          "surface-container-highest": "#e4e2e2",
+          "on-surface": "#1b1c1c",
+          "on-surface-variant": "#5f5e5e",
+          "outline-variant": "#d0c5b5",
+          "outline": "#7f7668",
+          "secondary": "#5f5e5e"
+        },
+        fontFamily: {
+          headline: ["Manrope", "sans-serif"],
+          body: ["Plus Jakarta Sans", "sans-serif"]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body {
+    background-color: #fbf9f8;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d0c5b5;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #735b24;
+  }
+</style>
+</head>
+<body class="text-on-surface bg-[#fbf9f8] antialiased overflow-hidden select-none" style="width: 1280px; height: 1024px;">
+<div class="flex h-screen w-full relative overflow-hidden">
+<!-- 1. Master Shell: Persistent Left Sidebar -->
+<aside class="w-64 bg-[#ffffff] border-r border-[#d0c5b5]/30 flex flex-col justify-between shrink-0 h-full z-20">
+<div class="flex flex-col">
+<!-- Header / Logo -->
+<div class="px-6 py-6 border-b border-[#d0c5b5]/20">
+<div class="flex items-center gap-2">
+<span class="w-8 h-8 rounded-lg bg-[#735b24] flex items-center justify-center text-white text-base font-bold shadow-sm">N</span>
+<div>
+<h1 class="text-2xl font-bold tracking-tight text-[#1b1c1c] font-headline leading-none">Nexife</h1>
+<p class="text-[10px] uppercase tracking-widest text-[#735b24]/80 font-bold mt-1">PREMIUM SALON MANAGEMENT</p>
+</div>
+</div>
+</div>
+<!-- Navigation Menu Items -->
+<nav class="px-3 py-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#5f5e5e] hover:bg-[#f5f3f3] transition-colors text-sm font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+          Dashboard
+        </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#c8a96a]/15 text-[#735b24] font-semibold border-l-4 border-[#735b24] shadow-xs text-sm" href="#">
+<span class="material-symbols-outlined text-[20px] text-[#735b24]" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+          Appointments
+        </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#5f5e5e] hover:bg-[#f5f3f3] transition-colors text-sm font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">group</span>
+          Customers
+        </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#5f5e5e] hover:bg-[#f5f3f3] transition-colors text-sm font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">payments</span>
+          Billing
+        </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#5f5e5e] hover:bg-[#f5f3f3] transition-colors text-sm font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">badge</span>
+          Staff
+        </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#5f5e5e] hover:bg-[#f5f3f3] transition-colors text-sm font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">analytics</span>
+          Reports
+        </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#5f5e5e] hover:bg-[#f5f3f3] transition-colors text-sm font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">storefront</span>
+          Branches
+        </a>
+<a class="flex items-center justify-between px-3 py-2 rounded-lg text-[#735b24] bg-[#fbf9f8] border border-[#d0c5b5]/30 hover:border-[#c8a96a] transition-all text-sm font-semibold group mt-2" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-[#c8a96a]">auto_awesome</span>
+<span class="">AI Style Studio</span>
+</div>
+<span class="text-[10px] bg-[#c8a96a]/20 text-[#735b24] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Pro</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#5f5e5e] hover:bg-[#f5f3f3] transition-colors text-sm font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">chat</span>
+          WhatsApp Center
+        </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#5f5e5e] hover:bg-[#f5f3f3] transition-colors text-sm font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+          Settings
+        </a>
+</nav>
+</div>
+<!-- Bottom sidebar status -->
+<div class="p-4 border-t border-[#d0c5b5]/20 bg-[#fbf9f8]/60">
+
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-hidden bg-[#fbf9f8]">
+<!-- Top Header Bar -->
+<header class="h-16 px-8 bg-[#ffffff] border-b border-[#d0c5b5]/30 flex items-center justify-between shrink-0 z-10 shadow-xs">
+<!-- Search Input -->
+<div class="flex items-center w-full max-w-md relative">
+<span class="material-symbols-outlined absolute left-3.5 text-[#5f5e5e] text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-[#fbf9f8] border border-[#d0c5b5]/40 rounded-full text-xs text-[#1b1c1c] placeholder-[#5f5e5e]/70 focus:outline-none focus:ring-1 focus:ring-[#735b24] focus:border-[#735b24] transition-all" placeholder="Search appointments, customers, inventory or bills..." type="text">
+</div>
+<!-- Right Header Actions & User Profile -->
+<div class="flex items-center gap-5">
+<button class="w-9 h-9 rounded-full flex items-center justify-center text-[#5f5e5e] hover:text-[#735b24] hover:bg-[#f5f3f3] transition-colors relative" title="Notifications">
+<span class="material-symbols-outlined text-[22px]">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-[#ba1a1a] rounded-full ring-2 ring-white"></span>
+</button>
+<button class="w-9 h-9 rounded-full flex items-center justify-center text-[#5f5e5e] hover:text-[#735b24] hover:bg-[#f5f3f3] transition-colors" title="Help &amp; Support">
+<span class="material-symbols-outlined text-[22px]">help</span>
+</button>
+<div class="h-6 w-px bg-[#d0c5b5]/40"></div>
+<!-- User Profile Area -->
+<div class="flex items-center gap-3 cursor-pointer">
+<img alt="Sarah Jenkins" class="w-9 h-9 rounded-full object-cover border border-[#c8a96a]/40 shadow-xs" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvPTpEzM7lL9RJd_AenLOqWE7qGeZjXF9IufHhsGDQUX91YjJGRKCDTFBUct0INFskP7380xZOlaDH2zyc9zw6rttwf8WZou7YqJ85IO77DVyJTpBQN5frKI4cOSw49dx45osHCEXox3J-hyrRRVZeIScfijbfnJTGbQSDiB7i4I4T1gUJ7-1bHDVinJK3T8M2Tx4aSymWi0W_UGhV-bIdAog3LYplGm4nT0x7eL6gid58awrYHLtBVQ">
+<div class="flex flex-col text-left">
+<span class="text-xs font-bold text-[#1b1c1c] leading-tight">Sarah Jenkins</span>
+<span class="text-[11px] text-[#735b24] font-medium">Owner</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Scrollable Content Canvas (Vertical Scrolling Enabled) -->
+<div class="flex-1 overflow-y-auto px-8 py-6">
+<div class="max-w-5xl mx-auto space-y-6 pb-12">
+<!-- 2. Page Header -->
+<div class="flex flex-col gap-1 border-b border-[#d0c5b5]/30 pb-4">
+<div class="flex items-center gap-1.5 text-xs text-[#5f5e5e] font-medium">
+<a class="hover:text-[#735b24] transition-colors" href="#">Appointments</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-[#735b24] font-semibold">Book Appointment</span>
+</div>
+<div class="flex items-center justify-between mt-1">
+<div>
+<h2 class="text-2xl font-bold text-[#1b1c1c] font-headline tracking-tight">Book Appointment</h2>
+<p class="text-xs text-[#5f5e5e] mt-0.5">Schedule a new salon service, assign staff, and reserve client appointment slots.</p>
+</div>
+<div class="flex items-center gap-2 bg-[#ffffff] border border-[#d0c5b5]/40 px-3 py-1.5 rounded-lg shadow-xs">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="text-xs font-semibold text-[#1b1c1c]">Active Slot Availability: High</span>
+</div>
+</div>
+</div>
+<!-- 3. Booking Form Structure (2-Column Modular Grid Layout) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- Left Column: Form Details (7 Cols) -->
+<div class="lg:col-span-7 space-y-6">
+<!-- Section 1: Client & Branch Details -->
+<div class="bg-[#ffffff] rounded-xl p-5 border border-[#d0c5b5]/30 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] space-y-4">
+<div class="flex items-center justify-between pb-3 border-b border-[#d0c5b5]/20">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-[#735b24]/10 text-[#735b24] flex items-center justify-center font-bold text-xs">1</span>
+<h3 class="font-headline font-bold text-sm text-[#1b1c1c]">Client &amp; Branch Details</h3>
+</div>
+<button class="text-xs font-semibold text-[#735b24] hover:underline flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">person_add</span>New Client
+                </button>
+</div>
+<!-- Customer Field -->
+<div>
+<label class="block text-xs font-semibold text-[#5f5e5e] mb-1.5">Customer Selector</label>
+<div class="relative flex items-center bg-[#fbf9f8] border border-[#735b24]/40 rounded-lg p-2.5 gap-3 ring-1 ring-[#735b24]/20 shadow-xs">
+<div class="w-9 h-9 rounded-full bg-[#c8a96a]/20 border border-[#c8a96a] text-[#735b24] font-bold text-xs flex items-center justify-center shrink-0">
+                    SL
+                  </div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-[#1b1c1c] truncate">Sophia Loren</span>
+<span class="text-[10px] font-semibold bg-[#735b24] text-white px-2 py-0.5 rounded-full">VIP Member</span>
+</div>
+<p class="text-[11px] text-[#5f5e5e] truncate mt-0.5">+91 98201 44821 • sophia.loren@luxurymail.com</p>
+</div>
+<button class="text-[#735b24] hover:text-[#1b1c1c] p-1 rounded-md" title="Change Customer" type="button">
+<span class="material-symbols-outlined text-[18px]">swap_horiz</span>
+</button>
+</div>
+</div>
+<!-- Branch Field -->
+<div>
+<label class="block text-xs font-semibold text-[#5f5e5e] mb-1.5">Salon Branch</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#735b24] text-[18px]">storefront</span>
+<select class="w-full appearance-none bg-[#ffffff] border border-[#d0c5b5]/50 rounded-lg pl-9 pr-9 py-2.5 text-xs font-semibold text-[#1b1c1c] focus:outline-none focus:ring-1 focus:ring-[#735b24] focus:border-[#735b24]">
+<option selected="">Downtown Flagship (Mumbai – 27)</option>
+<option>Bandra Luxury Lounge (Mumbai – 50)</option>
+<option>Juhu Seaside Pavilion (Mumbai – 49)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#5f5e5e] pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-1 border-t border-[#d0c5b5]/20">
+  <!-- Appointment Date Field -->
+  <div>
+    <label class="block text-xs font-semibold text-[#5f5e5e] mb-1.5">Appointment Date</label>
+    <div class="relative flex items-center">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#735b24] text-[18px]">calendar_today</span>
+      <input type="text" value="24 Oct 2023 (Tue)" class="w-full bg-[#ffffff] border border-[#d0c5b5]/50 rounded-lg pl-9 pr-3 py-2.5 text-xs font-semibold text-[#1b1c1c] focus:outline-none focus:ring-1 focus:ring-[#735b24] focus:border-[#735b24] cursor-pointer" placeholder="Select date">
+    </div>
+  </div>
+  <!-- Appointment Time Field -->
+  <div>
+    <label class="block text-xs font-semibold text-[#5f5e5e] mb-1.5">Appointment Time</label>
+    <div class="flex items-center gap-1.5">
+      <div class="relative flex-1">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#735b24] text-[18px]">schedule</span>
+        <input type="text" value="10:00" class="w-full bg-[#ffffff] border border-[#d0c5b5]/50 rounded-lg pl-9 pr-3 py-2.5 text-xs font-semibold text-[#1b1c1c] focus:outline-none focus:ring-1 focus:ring-[#735b24] focus:border-[#735b24]" placeholder="--:--">
+      </div>
+      <div class="flex rounded-lg border border-[#d0c5b5]/50 overflow-hidden shrink-0 bg-[#fbf9f8] p-0.5">
+        <button type="button" class="px-2 py-1.5 text-xs font-bold rounded bg-[#735b24] text-white transition-colors">AM</button>
+        <button type="button" class="px-2 py-1.5 text-xs font-semibold rounded text-[#5f5e5e] hover:text-[#1b1c1c] hover:bg-[#f5f3f3] transition-colors">PM</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<!-- Section 2: Services & Pricing -->
+<div class="bg-[#ffffff] rounded-xl p-5 border border-[#d0c5b5]/30 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] space-y-4">
+<div class="flex items-center justify-between pb-3 border-b border-[#d0c5b5]/20">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-[#735b24]/10 text-[#735b24] flex items-center justify-center font-bold text-xs">2</span>
+<h3 class="font-headline font-bold text-sm text-[#1b1c1c]">Services &amp; Pricing</h3>
+</div>
+<span class="text-xs text-[#735b24] font-semibold">2 Services Selected</span>
+</div>
+<!-- Interactive Service Selector -->
+<div class="space-y-3"><!-- Service Row 1 -->
+<div class="p-3.5 rounded-xl border border-[#c8a96a]/50 bg-[#fbf9f8] shadow-xs transition-colors">
+  <div class="flex items-end gap-3">
+    <!-- Service Selector -->
+    <div class="flex-[3] min-w-0">
+      <label class="block text-[11px] font-bold text-[#1b1c1c] mb-1 uppercase tracking-wider">Service</label>
+      <div class="relative">
+        <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[#735b24] text-[16px]">spa</span>
+        <select class="w-full appearance-none bg-[#ffffff] border border-[#d0c5b5]/50 rounded-lg pl-8 pr-7 py-2 text-xs font-semibold text-[#1b1c1c] focus:outline-none focus:ring-1 focus:ring-[#735b24] truncate">
+          <option selected="">Balayage &amp; Precision Cut</option>
+          <option>Haircut &amp; Styling</option>
+          <option>Restorative Hair Spa Treatment</option>
+          <option>Signature Blowout &amp; Style</option>
+        </select>
+        <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[#5f5e5e] pointer-events-none text-[16px]">expand_more</span>
+      </div>
+    </div>
+    <!-- Stylist Selector -->
+    <div class="flex-[3] min-w-0">
+      <div class="flex items-center justify-between mb-1">
+        <label class="block text-[11px] font-bold text-[#1b1c1c] uppercase tracking-wider">Stylist</label>
+        <span class="text-[10px] text-emerald-700 bg-emerald-100 font-bold px-1.5 py-0.5 rounded leading-none">Available</span>
+      </div>
+      <div class="relative">
+        <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[#735b24] text-[16px]">badge</span>
+        <select class="w-full appearance-none bg-[#ffffff] border border-[#d0c5b5]/50 rounded-lg pl-8 pr-7 py-2 text-xs font-semibold text-[#1b1c1c] focus:outline-none focus:ring-1 focus:ring-[#735b24] truncate">
+          <option selected="">James Wright — Senior Stylist</option>
+          <option>Kavya Menon — Hair Therapist</option>
+          <option>Elena Rodriguez — Colour Specialist</option>
+          <option>Aarav Mehta — Master Barber</option>
+        </select>
+        <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[#5f5e5e] pointer-events-none text-[16px]">expand_more</span>
+      </div>
+    </div>
+    <!-- Approx Duration -->
+    <div class="w-24 shrink-0">
+      <label class="block text-[11px] font-bold text-[#1b1c1c] mb-1 uppercase tracking-wider">Duration</label>
+      <div class="bg-[#ffffff] border border-[#d0c5b5]/50 rounded-lg px-2.5 py-2 text-xs font-semibold text-[#5f5e5e] flex items-center justify-center gap-1.5 h-9">
+        <span class="material-symbols-outlined text-[15px] text-[#735b24]">schedule</span>
+        <span class="">75 min</span>
+      </div>
+    </div>
+    <!-- Price -->
+    <div class="w-24 shrink-0">
+      <label class="block text-[11px] font-bold text-[#1b1c1c] mb-1 uppercase tracking-wider text-right">Price</label>
+      <div class="bg-[#ffffff] border border-[#d0c5b5]/50 rounded-lg px-2.5 py-2 text-xs font-bold text-[#735b24] text-center whitespace-nowrap h-9 flex items-center justify-center">
+        ₹6,500</div>
+    </div>
+    <!-- Remove Action -->
+    <div class="shrink-0 flex items-center pb-1">
+      <button type="button" class="w-8 h-8 rounded-lg text-[#5f5e5e]/40 cursor-not-allowed flex items-center justify-center" title="Primary service cannot be removed" disabled="">
+        <span class="material-symbols-outlined text-[18px]">delete</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Service Row 2 -->
+
+
+<!-- Add Service Action Button -->
+<button type="button" class="w-full py-2.5 px-3 rounded-lg border border-dashed border-[#c8a96a] text-[#735b24] hover:bg-[#c8a96a]/10 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+  <span class="material-symbols-outlined text-[16px]">add_circle</span>
+  <span class="">+ Add Service</span>
+</button></div>
+<!-- Estimated Duration & Price Summary Box -->
+<div class="bg-[#f5f3f3] rounded-lg p-3 flex items-center justify-between border border-[#d0c5b5]/30">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-[#735b24]">timelapse</span>
+<span class="text-xs text-[#5f5e5e]">Estimated Duration:</span>
+<span class="text-xs font-bold text-[#1b1c1c]">120 mins (2 hrs)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs text-[#5f5e5e]">Estimated Price:</span>
+<span class="text-base font-bold text-[#735b24] font-headline">₹5,000</span>
+</div>
+</div>
+</div>
+<!-- Section 3: Scheduling & Staff Assignment -->
+<div class="bg-[#ffffff] rounded-xl p-5 border border-[#d0c5b5]/30 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] space-y-4">
+<div class="flex items-center gap-2 pb-3 border-b border-[#d0c5b5]/20">
+<span class="w-6 h-6 rounded bg-[#735b24]/10 text-[#735b24] flex items-center justify-center font-bold text-xs">3</span>
+<h3 class="font-headline font-bold text-sm text-[#1b1c1c]">Scheduling &amp; Resource Allocation</h3>
+</div>
+<!-- Date & Times Grid -->
+<div class="grid grid-cols-3 gap-3">
+<!-- Date Picker -->
+<div>
+<label class="block text-xs font-semibold text-[#5f5e5e] mb-1">Date</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[#735b24] text-[16px]">calendar_today</span>
+<input class="w-full bg-[#fbf9f8] border border-[#d0c5b5]/50 rounded-lg pl-8 pr-2 py-2 text-xs font-semibold text-[#1b1c1c] focus:outline-none" readonly="" type="text" value="24 Oct 2023 (Tue)">
+</div>
+</div>
+<!-- Start Time Picker -->
+<div>
+<label class="block text-xs font-semibold text-[#5f5e5e] mb-1">Start Time</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[#735b24] text-[16px]">schedule</span>
+<select class="w-full appearance-none bg-[#ffffff] border border-[#d0c5b5]/50 rounded-lg pl-8 pr-6 py-2 text-xs font-semibold text-[#1b1c1c] focus:outline-none focus:ring-1 focus:ring-[#735b24]">
+<option selected="">10:00 AM</option>
+<option>10:30 AM</option>
+<option>11:00 AM</option>
+<option>11:30 AM</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[#5f5e5e] pointer-events-none text-[16px]">expand_more</span>
+</div>
+</div>
+<!-- End Time Calculated -->
+<div>
+<label class="block text-xs font-semibold text-[#5f5e5e] mb-1">End Time</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[#5f5e5e] text-[16px]">update</span>
+<input class="w-full bg-[#f5f3f3] border border-[#d0c5b5]/40 rounded-lg pl-8 pr-2 py-2 text-xs font-semibold text-[#1b1c1c] focus:outline-none cursor-not-allowed" readonly="" type="text" value="12:00 PM">
+</div>
+</div>
+</div>
+<!-- Staff Selector & Room/Chair Resource -->
+<div class="">
+<label class="block text-xs font-semibold text-[#5f5e5e] mb-1">Room / Chair Resource</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[#735b24] text-[16px]">chair</span>
+<select class="w-full appearance-none bg-[#ffffff] border border-[#d0c5b5]/50 rounded-lg pl-8 pr-6 py-2 text-xs font-semibold text-[#1b1c1c] focus:outline-none focus:ring-1 focus:ring-[#735b24]">
+<option selected="">Station 04 — Styling Bay</option>
+<option>Station 01 — Color Bar</option>
+<option>VIP Suite A — Private Salon</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[#5f5e5e] pointer-events-none text-[16px]">expand_more</span>
+</div>
+</div>
+<!-- Booking Notes / Client Requests -->
+<div class="">
+  <div class="flex items-center justify-between mb-1.5">
+    <label class="block text-xs font-semibold text-[#5f5e5e]">Booking Source</label>
+    <span class="text-[11px] text-[#5f5e5e]/70">Channel origin</span>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+    <label class="flex items-center gap-2 p-2 rounded-lg border border-[#d0c5b5]/40 bg-[#ffffff] hover:border-[#c8a96a]/70 hover:bg-[#fbf9f8] cursor-pointer transition-colors">
+      <input type="radio" name="booking_source" value="walk-in" class="w-4 h-4 text-[#735b24] focus:ring-[#735b24] border-[#d0c5b5] rounded-full">
+      <span class="material-symbols-outlined text-[16px] text-[#735b24]">directions_walk</span>
+      <span class="text-xs font-semibold text-[#1b1c1c]">Walk-in</span>
+    </label>
+    <label class="flex items-center gap-2 p-2 rounded-lg border border-[#735b24] bg-[#c8a96a]/10 ring-1 ring-[#735b24]/20 cursor-pointer transition-colors shadow-xs">
+      <input type="radio" name="booking_source" value="phone" checked="" class="w-4 h-4 text-[#735b24] focus:ring-[#735b24] border-[#735b24] rounded-full">
+      <span class="material-symbols-outlined text-[16px] text-[#735b24]">call</span>
+      <span class="text-xs font-semibold text-[#1b1c1c]">Phone</span>
+    </label>
+    <label class="flex items-center gap-2 p-2 rounded-lg border border-[#d0c5b5]/40 bg-[#ffffff] hover:border-[#c8a96a]/70 hover:bg-[#fbf9f8] cursor-pointer transition-colors">
+      <input type="radio" name="booking_source" value="whatsapp" class="w-4 h-4 text-[#735b24] focus:ring-[#735b24] border-[#d0c5b5] rounded-full">
+      <span class="material-symbols-outlined text-[16px] text-[#735b24]">chat</span>
+      <span class="text-xs font-semibold text-[#1b1c1c]">WhatsApp</span>
+    </label>
+    <label class="flex items-center gap-2 p-2 rounded-lg border border-[#d0c5b5]/40 bg-[#ffffff] hover:border-[#c8a96a]/70 hover:bg-[#fbf9f8] cursor-pointer transition-colors">
+      <input type="radio" name="booking_source" value="online" class="w-4 h-4 text-[#735b24] focus:ring-[#735b24] border-[#d0c5b5] rounded-full">
+      <span class="material-symbols-outlined text-[16px] text-[#735b24]">language</span>
+      <span class="text-xs font-semibold text-[#1b1c1c]">Online</span>
+    </label>
+  </div>
+</div><div>
+<label class="block text-xs font-semibold text-[#5f5e5e] mb-1">Booking Notes / Client Requests</label>
+<div class="relative">
+<textarea class="w-full bg-[#fbf9f8] border border-[#d0c5b5]/50 rounded-lg p-2.5 text-xs text-[#1b1c1c] focus:outline-none focus:ring-1 focus:ring-[#735b24] resize-none" placeholder="Special instructions..." rows="2">Client requested warm honey caramel tone accents for balayage.</textarea>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Mandatory Review Appointment Card & Actions (5 Cols) -->
+<div class="lg:col-span-5 space-y-5 sticky top-2">
+<!-- Section 4: Mandatory Review Appointment Card -->
+<div class="bg-[#ffffff] rounded-xl border-2 border-[#c8a96a]/70 p-5 shadow-[0_8px_30px_rgb(115,91,36,0.08)] relative overflow-hidden">
+<div class="absolute -right-8 -top-8 w-24 h-24 bg-[#c8a96a]/10 rounded-full pointer-events-none"></div>
+<!-- Review Card Header -->
+<div class="flex items-center justify-between pb-3.5 border-b border-[#d0c5b5]/30">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#735b24] text-[22px]">verified</span>
+<div>
+<h3 class="font-headline font-bold text-base text-[#1b1c1c]">Review Appointment</h3>
+<p class="text-[11px] text-[#5f5e5e]">Verify booking details before confirmation</p>
+</div>
+</div>
+<span class="text-[10px] font-bold text-[#735b24] bg-[#c8a96a]/20 border border-[#c8a96a]/50 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                  Ready
+                </span>
+</div>
+<!-- Summary Specifications -->
+<div class="py-3.5 space-y-3 text-xs">
+<!-- Customer Row -->
+<div class="flex items-start justify-between">
+<span class="text-[#5f5e5e] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-[#735b24]">person</span> Customer
+                  </span>
+<div class="text-right">
+<span class="font-bold text-[#1b1c1c] block">Sophia Loren</span>
+<span class="text-[11px] text-[#5f5e5e]">+91 98201 44821</span>
+</div>
+</div>
+<!-- Branch Row -->
+<div class="flex items-start justify-between">
+<span class="text-[#5f5e5e] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-[#735b24]">storefront</span> Branch
+                  </span>
+<span class="font-semibold text-[#1b1c1c] text-right max-w-[190px]">
+                    Downtown Flagship <span class="text-[11px] text-[#5f5e5e] block">(Mumbai – 27)</span>
+</span>
+</div>
+<!-- Services Row -->
+<div class="pt-1 border-t border-[#d0c5b5]/20 space-y-2">
+<div class="flex items-center justify-between">
+<span class="text-[#5f5e5e] flex items-center gap-1.5 font-medium">
+<span class="material-symbols-outlined text-[15px] text-[#735b24]">spa</span> Services &amp; Staff
+</span>
+<span class="text-[10px] text-[#735b24] font-bold bg-[#c8a96a]/15 px-1.5 py-0.5 rounded inline-block">2 services paired</span>
+</div>
+<div class="space-y-1.5 pl-5">
+<div class="flex items-baseline justify-between text-xs">
+<span class="font-semibold text-[#1b1c1c]">Balayage &amp; Precision Cut</span>
+<span class="text-[11px] text-[#5f5e5e]">James Wright <span class="text-[10px] text-[#735b24]">(Senior Stylist)</span></span>
+</div>
+<div class="flex items-baseline justify-between text-xs">
+<span class="font-semibold text-[#1b1c1c]">Restorative Hair Spa Treatment</span>
+<span class="text-[11px] text-[#5f5e5e]">Kavya Menon <span class="text-[10px] text-[#735b24]">(Hair Therapist)</span></span>
+</div>
+</div>
+</div>
+<!-- Staff Member Row -->
+
+<!-- Date & Time Row -->
+<div class="flex items-start justify-between">
+<span class="text-[#5f5e5e] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-[#735b24]">event</span> Date &amp; Time
+                  </span>
+<div class="text-right">
+<span class="font-bold text-[#1b1c1c] block">Tuesday, 24 Oct 2023</span>
+<span class="text-[11px] text-[#735b24] font-semibold">10:00 AM – 12:00 PM (120 mins)</span>
+</div>
+</div>
+<!-- Resource Station -->
+<div class="flex items-center justify-between">
+<span class="text-[#5f5e5e] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-[#735b24]">chair</span> Station
+                  </span>
+<span class="font-medium text-[#1b1c1c]">Station 04 — Styling Bay</span>
+</div>
+</div>
+<!-- Price Badge & Totals -->
+<div class="mt-2 pt-3 border-t-2 border-dashed border-[#d0c5b5]/40 bg-[#fbf9f8] -mx-5 px-5 pb-3">
+<div class="flex items-center justify-between mb-1">
+<span class="text-xs text-[#5f5e5e] font-medium">Estimated Total Price</span>
+<span class="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded">Taxes &amp; Service Fee Included</span>
+</div>
+<div class="flex items-baseline justify-between">
+<span class="text-[11px] text-[#5f5e5e]">Total Payable</span>
+<div class="text-2xl font-black text-[#735b24] font-headline tracking-tight">₹6,500</div>
+</div>
+</div>
+<!-- Section 5: Actions -->
+<div class="mt-4 pt-3 border-t border-[#d0c5b5]/30 space-y-2.5">
+<button class="w-full bg-[#c8a96a] hover:bg-[#735b24] text-[#1b1c1c] hover:text-white font-headline font-bold text-sm py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 group" type="button">
+<span class="material-symbols-outlined text-[20px] transition-transform group-hover:scale-110">check_circle</span>
+                  Confirm Appointment
+                </button>
+<div class="grid grid-cols-2 gap-2">
+<button class="w-full bg-[#ffffff] hover:bg-[#f5f3f3] text-[#5f5e5e] border border-[#d0c5b5]/50 font-semibold text-xs py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[15px]">bookmark</span> Save as Draft
+                  </button>
+<button class="w-full bg-[#ffffff] hover:bg-rose-50 text-rose-700 border border-rose-200 font-semibold text-xs py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[15px]">close</span> Cancel / Discard
+                  </button>
+</div>
+</div>
+</div>
+<!-- Quick Assistance Hint Card -->
+
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+</body></html>
