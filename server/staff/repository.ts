@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, eq, ilike, inArray, isNotNull, or, type SQL } from "drizzle-orm";
 import { DatabaseNotConfiguredError, isDatabaseConfigured, withTenant, type Transaction } from "@/db/client";
-import { staff, staffBreaks, staffWorkingHours } from "@/db/schema";
+import { staff, staffBreaks, staffServices, staffWorkingHours } from "@/db/schema";
 import { fixtureBranchActivity, fixtureBranches } from "@/db/seed/fixtures";
 import type {
   StaffFilters,
@@ -59,6 +59,7 @@ export type StaffDirectoryRow = StaffMember & {
 };
 
 export type StaffProfileRow = StaffDirectoryRow & {
+  serviceIds: string[];
   phone: string | null;
   gender: StaffGender | null;
   address: string | null;
@@ -108,6 +109,24 @@ async function loadSchedules(tx: Transaction, tenantId: string, rows: { id: stri
   return map;
 }
 
+/** Assigned service ids keyed by staff id; staff with none are absent. Omit `staffIds` for the whole tenant. */
+async function loadServiceIds(tx: Transaction, tenantId: string, staffIds?: string[]): Promise<Map<string, string[]>> {
+  const map = new Map<string, string[]>();
+  if (staffIds && !staffIds.length) return map;
+  const rows = await tx
+    .select({ staffId: staffServices.staffId, serviceId: staffServices.serviceId })
+    .from(staffServices)
+    .where(and(eq(staffServices.tenantId, tenantId), staffIds ? inArray(staffServices.staffId, staffIds) : undefined));
+  for (const r of rows) map.set(r.staffId, [...(map.get(r.staffId) ?? []), r.serviceId]);
+  return map;
+}
+
+/** Every staff member who has declared services, with those service ids. Booking uses it to narrow choices. */
+export async function listServiceAssignments(tenantId: string): Promise<Map<string, string[]>> {
+  if (!isDatabaseConfigured()) return new Map();
+  return withTenant(tenantId, (tx) => loadServiceIds(tx, tenantId));
+}
+
 const escapeLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 /** Directory rows (no sensitive fields). Fixture mode carries no individual staff, so it is empty. */
@@ -154,8 +173,9 @@ export async function findProfile(tenantId: string, staffId: string): Promise<St
     if (!row) return null;
 
     const schedules = await loadSchedules(tx, tenantId, [row]);
+    const serviceIds = (await loadServiceIds(tx, tenantId, [row.id])).get(row.id) ?? [];
     const { weeklyOffDay: _weeklyOffDay, ...rest } = row;
-    return { ...rest, schedule: schedules.get(row.id)! };
+    return { ...rest, serviceIds, schedule: schedules.get(row.id)! };
   });
 }
 
@@ -183,10 +203,14 @@ function profileColumns(input: StaffWrite) {
   };
 }
 
-/** Replace weekly hours and breaks with exactly what `input` carries. */
+/** Replace weekly hours, breaks and assigned services with exactly what `input` carries. */
 async function replaceChildren(tx: Transaction, tenantId: string, staffId: string, input: StaffWrite) {
   await tx.delete(staffWorkingHours).where(and(eq(staffWorkingHours.tenantId, tenantId), eq(staffWorkingHours.staffId, staffId)));
   await tx.delete(staffBreaks).where(and(eq(staffBreaks.tenantId, tenantId), eq(staffBreaks.staffId, staffId)));
+  await tx.delete(staffServices).where(and(eq(staffServices.tenantId, tenantId), eq(staffServices.staffId, staffId)));
+  if (input.serviceIds.length) {
+    await tx.insert(staffServices).values(input.serviceIds.map((serviceId) => ({ tenantId, staffId, serviceId })));
+  }
 
   if (input.hours.length) {
     await tx.insert(staffWorkingHours).values(input.hours.map((h) => ({ tenantId, staffId, dayOfWeek: h.day, startTime: h.start, endTime: h.end })));

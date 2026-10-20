@@ -4,6 +4,7 @@ import { DatabaseNotConfiguredError, isDatabaseConfigured, withTenant, type Exec
 import { appointmentServices, appointments, customers, services, staff, staffServices } from "@/db/schema";
 import { fixtureBranchActivity, fixtureBranches } from "@/db/seed/fixtures";
 import {
+  canEditAppointment,
   FALLBACK_DURATION_MINUTES,
   SLOT_HOLDING_STATUSES,
   type Appointment,
@@ -181,11 +182,77 @@ export type BookingWrite = {
   notes: string | null;
 };
 
-export type BookingResult =
-  | { ok: true; id: string }
+export type BookingFailure =
   | { ok: false; reason: "customer_not_found" }
   | { ok: false; reason: "staff_not_qualified" }
   | { ok: false; reason: "staff_conflict"; startsAt: Date; endsAt: Date };
+
+export type BookingResult = { ok: true; id: string } | BookingFailure;
+
+export type UpdateBookingResult = { ok: true } | BookingFailure | { ok: false; reason: "not_found" } | { ok: false; reason: "not_editable" };
+
+/**
+ * The checks every booking write shares, run inside the writing transaction: the customer exists in this tenant,
+ * the staff member performs every service, and (for an assigned staff member) the slot is free. `ignoreId` is the
+ * appointment being rescheduled, so it never collides with itself. Callers hold the per-staff advisory lock.
+ */
+async function checkBooking(tx: Executor, tenantId: string, input: BookingWrite, endsAt: Date, ignoreId?: string): Promise<BookingFailure | null> {
+  if (input.customerId) {
+    const [customer] = await tx
+      .select({ id: customers.id })
+      .from(customers)
+      .where(and(eq(customers.tenantId, tenantId), eq(customers.id, input.customerId)))
+      .limit(1);
+    if (!customer) return { ok: false, reason: "customer_not_found" };
+  }
+  if (!input.staffId) return null;
+
+  // A staff member who has declared qualifications may only take those services. No declared rows = unrestricted.
+  const qualifications = await tx
+    .select({ serviceId: staffServices.serviceId })
+    .from(staffServices)
+    .where(and(eq(staffServices.tenantId, tenantId), eq(staffServices.staffId, input.staffId)));
+  const qualified = new Set(qualifications.map((q) => q.serviceId));
+  if (qualifications.length && !input.lines.every((line) => qualified.has(line.serviceId))) {
+    return { ok: false, reason: "staff_not_qualified" };
+  }
+
+  const startIso = input.startsAt.toISOString();
+  const endIso = endsAt.toISOString();
+  const overlap: SQL = sql`${appointments.startsAt} < ${endIso}::timestamptz and ${appointments.startsAt} + (${durationExpr} * interval '1 minute') > ${startIso}::timestamptz`;
+  const [clash] = await tx
+    .select({ startsAt: appointments.startsAt, durationMinutes: durationExpr.mapWith(Number) })
+    .from(appointments)
+    .leftJoin(services, eq(services.id, appointments.serviceId))
+    .where(
+      and(
+        eq(appointments.tenantId, tenantId),
+        eq(appointments.staffId, input.staffId),
+        ignoreId ? ne(appointments.id, ignoreId) : undefined,
+        inArray(appointments.status, [...SLOT_HOLDING_STATUSES]),
+        overlap,
+      ),
+    )
+    .orderBy(asc(appointments.startsAt))
+    .limit(1);
+  if (clash) return { ok: false, reason: "staff_conflict", startsAt: clash.startsAt, endsAt: new Date(clash.startsAt.getTime() + clash.durationMinutes * 60_000) };
+  return null;
+}
+
+const lockStaff = (tx: Executor, staffId: string) => tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`appointments:${staffId}`}, 0))`);
+
+const totalMinutes = (lines: BookingLine[]) => lines.reduce((sum, line) => sum + line.durationMinutes, 0);
+
+const lineRows = (tenantId: string, appointmentId: string, lines: BookingLine[]) =>
+  lines.map((line, position) => ({
+    tenantId,
+    appointmentId,
+    serviceId: line.serviceId,
+    name: line.name,
+    priceCents: line.priceCents,
+    durationMinutes: line.durationMinutes,
+    position,
+  }));
 
 /**
  * Insert a booking atomically. For an assigned staff member the whole check-then-insert runs under a per-staff
@@ -193,52 +260,11 @@ export type BookingResult =
  * Unassigned bookings (no staff) have nobody to collide with and skip the overlap check.
  */
 export async function insertBooking(tenantId: string, input: BookingWrite): Promise<BookingResult> {
-  const durationMinutes = input.lines.reduce((sum, line) => sum + line.durationMinutes, 0);
-  const endsAt = new Date(input.startsAt.getTime() + durationMinutes * 60_000);
+  const endsAt = new Date(input.startsAt.getTime() + totalMinutes(input.lines) * 60_000);
   return withTenant(tenantId, async (tx): Promise<BookingResult> => {
-    if (input.customerId) {
-      const [customer] = await tx
-        .select({ id: customers.id })
-        .from(customers)
-        .where(and(eq(customers.tenantId, tenantId), eq(customers.id, input.customerId)))
-        .limit(1);
-      if (!customer) return { ok: false, reason: "customer_not_found" };
-    }
-
-    if (input.staffId) {
-      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`appointments:${input.staffId}`}, 0))`);
-
-      // A staff member who has declared qualifications may only take those services. No declared rows = unrestricted.
-      const qualifications = await tx
-        .select({ serviceId: staffServices.serviceId })
-        .from(staffServices)
-        .where(and(eq(staffServices.tenantId, tenantId), eq(staffServices.staffId, input.staffId)));
-      const qualified = new Set(qualifications.map((q) => q.serviceId));
-      if (qualifications.length && !input.lines.every((line) => qualified.has(line.serviceId))) {
-        return { ok: false, reason: "staff_not_qualified" };
-      }
-
-      const startIso = input.startsAt.toISOString();
-      const endIso = endsAt.toISOString();
-      const overlap: SQL = sql`${appointments.startsAt} < ${endIso}::timestamptz and ${appointments.startsAt} + (${durationExpr} * interval '1 minute') > ${startIso}::timestamptz`;
-      const [clash] = await tx
-        .select({ startsAt: appointments.startsAt, durationMinutes: durationExpr.mapWith(Number) })
-        .from(appointments)
-        .leftJoin(services, eq(services.id, appointments.serviceId))
-        .where(
-          and(
-            eq(appointments.tenantId, tenantId),
-            eq(appointments.staffId, input.staffId),
-            inArray(appointments.status, [...SLOT_HOLDING_STATUSES]),
-            overlap,
-          ),
-        )
-        .orderBy(asc(appointments.startsAt))
-        .limit(1);
-      if (clash) {
-        return { ok: false, reason: "staff_conflict", startsAt: clash.startsAt, endsAt: new Date(clash.startsAt.getTime() + clash.durationMinutes * 60_000) };
-      }
-    }
+    if (input.staffId) await lockStaff(tx, input.staffId);
+    const failure = await checkBooking(tx, tenantId, input, endsAt);
+    if (failure) return failure;
 
     const [row] = await tx
       .insert(appointments)
@@ -253,19 +279,61 @@ export async function insertBooking(tenantId: string, input: BookingWrite): Prom
         notes: input.notes,
       })
       .returning({ id: appointments.id });
-    await tx.insert(appointmentServices).values(
-      input.lines.map((line, position) => ({
-        tenantId,
-        appointmentId: row!.id,
-        serviceId: line.serviceId,
-        name: line.name,
-        priceCents: line.priceCents,
-        durationMinutes: line.durationMinutes,
-        position,
-      })),
-    );
+    await tx.insert(appointmentServices).values(lineRows(tenantId, row!.id, input.lines));
     return { ok: true, id: row!.id };
   });
+}
+
+/**
+ * Reschedule / edit a booking that hasn't been checked in. Same atomic checks as `insertBooking`, with the
+ * appointment locked first so a concurrent status change cannot slip in between the check and the write. The
+ * snapshot service lines are replaced with the newly chosen ones.
+ */
+export async function updateBooking(tenantId: string, id: string, input: BookingWrite): Promise<UpdateBookingResult> {
+  const endsAt = new Date(input.startsAt.getTime() + totalMinutes(input.lines) * 60_000);
+  return withTenant(tenantId, async (tx): Promise<UpdateBookingResult> => {
+    if (input.staffId) await lockStaff(tx, input.staffId);
+    const [current] = await tx
+      .select({ type: appointments.type, status: appointments.status })
+      .from(appointments)
+      .where(and(eq(appointments.tenantId, tenantId), eq(appointments.id, id)))
+      .limit(1)
+      .for("update");
+    if (!current) return { ok: false, reason: "not_found" };
+    if (!canEditAppointment(current)) return { ok: false, reason: "not_editable" };
+
+    const failure = await checkBooking(tx, tenantId, input, endsAt, id);
+    if (failure) return failure;
+
+    await tx
+      .update(appointments)
+      .set({
+        branchId: input.branchId,
+        customerId: input.customerId,
+        serviceId: input.lines[0]!.serviceId,
+        staffId: input.staffId,
+        startsAt: input.startsAt,
+        notes: input.notes,
+      })
+      .where(and(eq(appointments.tenantId, tenantId), eq(appointments.id, id)));
+    await tx.delete(appointmentServices).where(and(eq(appointmentServices.tenantId, tenantId), eq(appointmentServices.appointmentId, id)));
+    await tx.insert(appointmentServices).values(lineRows(tenantId, id, input.lines));
+    return { ok: true };
+  });
+}
+
+/**
+ * Permanently remove an appointment. Its own snapshot service lines go with it (ON DELETE CASCADE). Invoices and
+ * payments are separate financial records: their `appointment_id` is set to null and everything else is kept.
+ */
+export async function deleteById(tenantId: string, id: string): Promise<boolean> {
+  const rows = await withTenant(tenantId, (tx) =>
+    tx
+      .delete(appointments)
+      .where(and(eq(appointments.tenantId, tenantId), eq(appointments.id, id)))
+      .returning({ id: appointments.id }),
+  );
+  return rows.length > 0;
 }
 
 /** Compare-and-set: only moves the row if it is still in `from`, so a stale screen cannot overwrite a newer status. */

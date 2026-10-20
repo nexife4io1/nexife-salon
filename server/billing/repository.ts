@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { DatabaseNotConfiguredError, isDatabaseConfigured, withTenant } from "@/db/client";
-import { invoiceCounters, invoiceLines, invoices, payments } from "@/db/schema";
+import { invoiceCounters, invoiceLines, invoiceTips, invoices, payments } from "@/db/schema";
 import { fixtureBranchActivity, fixtureBranches } from "@/db/seed/fixtures";
 import { PAYMENT_METHODS, type InvoiceSummary, type Payment, type PaymentMethod } from "./schema";
 
@@ -30,13 +30,14 @@ export async function sumByBranchBetween(tenantId: string, start: Date, end: Dat
   return new Map(rows.map((r) => [r.branchId, r.total]));
 }
 
-export async function listRecent(tenantId: string, limit = 20): Promise<Payment[]> {
+export async function listRecent(tenantId: string, limit = 20, branchId?: string): Promise<Payment[]> {
   if (!isDatabaseConfigured()) return [];
   return withTenant(tenantId, (tx) =>
     tx
       .select({
         id: payments.id,
         branchId: payments.branchId,
+        customerName: invoices.customerName,
         appointmentId: payments.appointmentId,
         invoiceId: payments.invoiceId,
         receiptNumber: invoices.receiptNumber,
@@ -46,7 +47,7 @@ export async function listRecent(tenantId: string, limit = 20): Promise<Payment[
       })
       .from(payments)
       .leftJoin(invoices, eq(invoices.id, payments.invoiceId))
-      .where(eq(payments.tenantId, tenantId))
+      .where(and(eq(payments.tenantId, tenantId), branchId ? eq(payments.branchId, branchId) : undefined))
       .orderBy(desc(payments.paidAt), desc(payments.createdAt))
       .limit(limit),
   );
@@ -75,6 +76,8 @@ export type InvoiceRecord = {
   receiptNumber: string;
   currency: string;
   subtotalCents: number;
+  tipCents: number;
+  tips: { id: string; staffName: string; amountCents: number }[];
   totalCents: number;
   paidAt: Date;
   lines: { id: string; name: string; staffName: string | null; amountCents: number }[];
@@ -90,7 +93,7 @@ export async function findInvoice(tenantId: string, invoiceId: string): Promise<
       .where(and(eq(invoices.tenantId, tenantId), eq(invoices.id, invoiceId)))
       .limit(1);
     if (!invoice) return null;
-    const [lines, paid] = await Promise.all([
+    const [lines, paid, tips] = await Promise.all([
       tx
         .select({ id: invoiceLines.id, name: invoiceLines.name, staffName: invoiceLines.staffName, amountCents: invoiceLines.amountCents })
         .from(invoiceLines)
@@ -100,6 +103,11 @@ export async function findInvoice(tenantId: string, invoiceId: string): Promise<
         .select({ id: payments.id, method: payments.method, amountCents: payments.amountCents })
         .from(payments)
         .where(and(eq(payments.tenantId, tenantId), eq(payments.invoiceId, invoiceId))),
+      tx
+        .select({ id: invoiceTips.id, staffName: invoiceTips.staffName, amountCents: invoiceTips.amountCents })
+        .from(invoiceTips)
+        .where(and(eq(invoiceTips.tenantId, tenantId), eq(invoiceTips.invoiceId, invoiceId)))
+        .orderBy(asc(invoiceTips.position)),
     ]);
     return {
       id: invoice.id,
@@ -110,6 +118,9 @@ export async function findInvoice(tenantId: string, invoiceId: string): Promise<
       receiptNumber: invoice.receiptNumber,
       currency: invoice.currency,
       subtotalCents: invoice.subtotalCents,
+      tipCents: invoice.tipCents,
+      // Invoices written before per-staff tips carry a single tip in the legacy columns.
+      tips: tips.length ? tips : invoice.tipCents > 0 && invoice.tipStaffName ? [{ id: `legacy-${invoice.id}`, staffName: invoice.tipStaffName, amountCents: invoice.tipCents }] : [],
       totalCents: invoice.totalCents,
       paidAt: invoice.paidAt,
       lines,
@@ -184,6 +195,8 @@ export type NewInvoice = {
   currency: string;
   paidAt: Date;
   lines: { serviceId: string | null; kind: "catalog" | "custom"; name: string; staffName: string | null; amountCents: number }[];
+  /** Tip allocations on top of the lines (empty for none); the payments must cover lines + tips. */
+  tips: { amountCents: number; staffId: string; staffName: string }[];
   payments: { method: PaymentMethod; amountCents: number }[];
 };
 
@@ -202,9 +215,11 @@ export function formatReceiptNumber(paidAt: Date, sequence: number): string {
  */
 export async function createPaidInvoice(tenantId: string, input: NewInvoice): Promise<CreateInvoiceResult> {
   assertWritable();
-  const total = input.lines.reduce((sum, line) => sum + line.amountCents, 0);
+  const subtotal = input.lines.reduce((sum, line) => sum + line.amountCents, 0);
+  const tipCents = input.tips.reduce((sum, t) => sum + t.amountCents, 0);
+  const total = subtotal + tipCents;
   const paid = input.payments.reduce((sum, p) => sum + p.amountCents, 0);
-  if (!input.lines.length || total <= 0 || paid !== total) throw new Error("Invoice lines and payments must reconcile before they are written.");
+  if (!input.lines.length || subtotal <= 0 || input.tips.some((t) => !Number.isInteger(t.amountCents) || t.amountCents <= 0) || paid !== total) throw new Error("Invoice lines and payments must reconcile before they are written.");
 
   return withTenant(tenantId, async (tx): Promise<CreateInvoiceResult> => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`invoice:${input.appointmentId}`}, 0))`);
@@ -233,7 +248,8 @@ export async function createPaidInvoice(tenantId: string, input: NewInvoice): Pr
         customerName: input.customerName,
         receiptNumber,
         currency: input.currency,
-        subtotalCents: total,
+        subtotalCents: subtotal,
+        tipCents,
         totalCents: total,
         paidAt: input.paidAt,
       })
@@ -251,6 +267,11 @@ export async function createPaidInvoice(tenantId: string, input: NewInvoice): Pr
         position,
       })),
     );
+    if (input.tips.length) {
+      await tx.insert(invoiceTips).values(
+        input.tips.map((tip, position) => ({ tenantId, invoiceId: invoice!.id, staffId: tip.staffId, staffName: tip.staffName, amountCents: tip.amountCents, position })),
+      );
+    }
     await tx.insert(payments).values(
       input.payments.map((p) => ({
         tenantId,

@@ -40,7 +40,10 @@ function buildColumns(board: AppointmentBoard): Column[] {
 /** `receipts` maps appointment id to receipt id for the paid ones; `canCheckout` is false for roles without billing. */
 export function AppointmentsBoard({ board, currency, canCheckout, receipts }: { board: AppointmentBoard; currency: string; canCheckout: boolean; receipts: Record<string, string> }) {
   const readOnly = board.source === "demo";
-  const filtered = Boolean(board.filters.status || board.filters.branchId);
+  // "Upcoming" (no status) and "all" show a whole day's worth; a specific status is a narrowing filter.
+  const statusFiltered = Boolean(board.filters.status && board.filters.status !== "all");
+  const filtered = statusFiltered || Boolean(board.filters.branchId);
+  const upcoming = !board.filters.status;
   const columns = buildColumns(board);
   const branchNames = new Map(board.branches.map((b) => [b.id, b.name]));
   const showBranch = !board.filters.branchId && board.branches.length > 1;
@@ -50,13 +53,15 @@ export function AppointmentsBoard({ board, currency, canCheckout, receipts }: { 
       <Card>
         <EmptyState
           icon="calendar"
-          title={filtered ? "No appointments match these filters" : `No appointments on ${formatDay(board.date)}`}
+          title={filtered ? "No appointments match these filters" : `No ${upcoming ? "upcoming " : ""}appointments on ${formatDay(board.date)}`}
           description={
             readOnly
               ? "Demo data is read-only, so there are no bookings to show. Connect a database to take bookings."
               : filtered
                 ? "Try another status or branch, or clear the filters."
-                : "Bookings and walk-ins for this day will appear here."
+                : upcoming
+                  ? "Bookings and walk-ins still to come this day appear here. Choose All to include finished and closed ones."
+                  : "Bookings and walk-ins for this day will appear here."
           }
           action={
             readOnly ? undefined : (
@@ -100,9 +105,10 @@ export function AppointmentsBoard({ board, currency, canCheckout, receipts }: { 
                 billing={{ canCheckout, receiptId: receipts[appointment.id] } satisfies CardBilling}
                 branchName={showBranch ? branchNames.get(appointment.branchId) : undefined}
                 readOnly={readOnly}
+                now={board.now}
               />
             ))}
-            {!readOnly && column.staffId && !board.filters.status && (
+            {!readOnly && column.staffId && !statusFiltered && (
               <Link
                 href={bookHref(board, column.staffId, column.branchId)}
                 className="flex items-center justify-center gap-1 rounded-card border-2 border-dashed border-outline-variant/40 py-5 text-label-md text-secondary transition-colors hover:border-primary hover:bg-primary-fixed/20 hover:text-primary"
@@ -111,7 +117,7 @@ export function AppointmentsBoard({ board, currency, canCheckout, receipts }: { 
                 {column.appointments.length ? "Book another slot" : "Book a slot"}
               </Link>
             )}
-            {!column.appointments.length && (readOnly || board.filters.status) && <p className="px-1 text-body-sm text-secondary">Nothing scheduled.</p>}
+            {!column.appointments.length && (readOnly || statusFiltered) &&<p className="px-1 text-body-sm text-secondary">Nothing scheduled.</p>}
           </div>
         </section>
       ))}

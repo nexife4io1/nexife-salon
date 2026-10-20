@@ -5,12 +5,13 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
-import { formatMoney, parseMoneyToCents } from "@/lib/format";
+import { centsToInputValue, formatMoney, parseMoneyToCents } from "@/lib/format";
 import { recordPaymentAction } from "@/server/billing/actions";
 import {
   MAX_CHECKOUT_LINES,
   MAX_CUSTOM_NAME_LENGTH,
   MAX_PAYMENT_SPLITS,
+  MAX_TIP_ROWS,
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABELS,
   type CheckoutLine,
@@ -18,7 +19,13 @@ import {
   type PaymentMethod,
 } from "@/server/billing/schema";
 
+/** A tip row with its amount as typed. Several rows may name the same team member. */
+type TipRow = { id: number; staffId: string; amount: string };
 type Split = { id: number; method: PaymentMethod; amount: string };
+/** A bill line with its price as typed, so a half-edited value ("12.") doesn't fight the user. */
+type EditableLine = CheckoutLine & { priceText: string };
+
+const toEditable = (line: CheckoutLine): EditableLine => ({ ...line, priceText: centsToInputValue(line.priceCents) });
 
 const dateFmt = (at: Date, timeZone: string) => new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone }).format(at);
 
@@ -32,7 +39,8 @@ export function CheckoutForm({ view }: { view: CheckoutView }) {
   const feedbackRef = useRef<HTMLDivElement>(null);
   const nextKey = useRef(0);
 
-  const [lines, setLines] = useState<CheckoutLine[]>(view.lines);
+  const [lines, setLines] = useState<EditableLine[]>(() => view.lines.map(toEditable));
+  const [tipRows, setTipRows] = useState<TipRow[]>([]);
   const [addServiceId, setAddServiceId] = useState("");
   const [customName, setCustomName] = useState("");
   const [customPrice, setCustomPrice] = useState("");
@@ -48,14 +56,22 @@ export function CheckoutForm({ view }: { view: CheckoutView }) {
   }, [state]);
 
   const money = (cents: number) => formatMoney(cents, view.currency);
-  const total = lines.reduce((sum, l) => sum + l.priceCents, 0);
+  const priceOf = (line: EditableLine) => parseMoneyToCents(line.priceText);
+  const linesValid = lines.every((l) => priceOf(l) !== null);
+  const subtotal = lines.reduce((sum, l) => sum + (priceOf(l) ?? 0), 0);
+  // No rows = no tip. Every row needs someone to credit and an amount above zero.
+  const tipAmount = (row: TipRow) => parseMoneyToCents(row.amount);
+  const tipRowError = (row: TipRow) => (!row.staffId ? "Choose who the tip is for" : !(tipAmount(row)! > 0) ? "Enter a tip above zero" : undefined);
+  const tipValid = tipRows.every((r) => tipRowError(r) === undefined);
+  const tip = tipRows.reduce((sum, r) => sum + (tipAmount(r) ?? 0), 0);
+  const total = subtotal + tip;
   const allocations: { method: PaymentMethod; amountCents: number | null }[] = splits
     ? splits.map((s) => ({ method: s.method, amountCents: parseMoneyToCents(s.amount) }))
     : [{ method, amountCents: total }];
   const allocated = allocations.reduce((sum, a) => sum + (a.amountCents ?? 0), 0);
   const remaining = total - allocated;
   const splitsValid = allocations.every((a) => a.amountCents !== null && a.amountCents > 0);
-  const canPay = !readOnly && lines.length > 0 && total > 0 && remaining === 0 && splitsValid;
+  const canPay = !readOnly && lines.length > 0 && linesValid && tipValid && subtotal > 0 && remaining === 0 && splitsValid;
 
   const inBill = new Set(lines.flatMap((l) => (l.serviceId ? [l.serviceId] : [])));
   const addable = view.catalog.filter((s) => !inBill.has(s.id));
@@ -63,7 +79,7 @@ export function CheckoutForm({ view }: { view: CheckoutView }) {
   const addCatalogLine = () => {
     const service = view.catalog.find((s) => s.id === addServiceId);
     if (!service || lines.length >= MAX_CHECKOUT_LINES) return;
-    setLines((current) => [...current, { key: `new-${nextKey.current++}`, kind: "catalog", serviceId: service.id, name: service.name, priceCents: service.priceCents }]);
+    setLines((current) => [...current, toEditable({ key: `new-${nextKey.current++}`, kind: "catalog", serviceId: service.id, name: service.name, priceCents: service.priceCents })]);
     setAddServiceId("");
   };
 
@@ -73,18 +89,27 @@ export function CheckoutForm({ view }: { view: CheckoutView }) {
     if (!name) return setCustomError("Enter a name for the item");
     if (!priceCents) return setCustomError("Enter a price above zero");
     if (lines.length >= MAX_CHECKOUT_LINES) return setCustomError(`A bill can have at most ${MAX_CHECKOUT_LINES} items`);
-    setLines((current) => [...current, { key: `new-${nextKey.current++}`, kind: "custom", serviceId: null, name, priceCents }]);
+    setLines((current) => [...current, toEditable({ key: `new-${nextKey.current++}`, kind: "custom", serviceId: null, name, priceCents })]);
     setCustomName("");
     setCustomPrice("");
     setCustomError(undefined);
   };
+
+  const addTipRow = () => {
+    if (tipRows.length >= MAX_TIP_ROWS) return;
+    setTipRows((current) => [...current, { id: nextKey.current++, staffId: current.length ? "" : (view.defaultTipStaffId ?? ""), amount: "" }]);
+  };
+  const updateTipRow = (id: number, patch: Partial<TipRow>) => setTipRows((current) => current.map((r) => (r.id === id ? { ...r, ...patch } : r)));
 
   const startSplit = () => setSplits([{ id: 0, method, amount: (total / 100).toFixed(2) }, { id: 1, method: method === "cash" ? "card" : "cash", amount: "" }]);
   const updateSplit = (id: number, patch: Partial<Split>) => setSplits((current) => current?.map((s) => (s.id === id ? { ...s, ...patch } : s)) ?? null);
 
   const payload = JSON.stringify({
     appointmentId: view.appointment.id,
-    lines: lines.map((l) => (l.kind === "custom" ? { kind: "custom", name: l.name, priceCents: l.priceCents } : { kind: "catalog", serviceId: l.serviceId })),
+    lines: lines.map((l) =>
+      l.kind === "custom" ? { kind: "custom", name: l.name, priceCents: priceOf(l) ?? 0 } : { kind: "catalog", serviceId: l.serviceId, priceCents: priceOf(l) ?? 0 },
+    ),
+    tips: tipRows.map((r) => ({ staffId: r.staffId, amountCents: tipAmount(r) ?? 0 })),
     payments: allocations.map((a) => ({ method: a.method, amountCents: a.amountCents ?? 0 })),
   });
 
@@ -111,7 +136,7 @@ export function CheckoutForm({ view }: { view: CheckoutView }) {
         </Card>
 
         <Card padding="lg" className="p-6 md:p-8">
-          <CardHeader title="Services" description="Everything booked on this appointment. Add or remove items before taking payment." />
+          <CardHeader title="Services" description="Everything booked on this appointment. Edit a price, or add or remove items, before taking payment. Price changes apply to this bill only." />
           {lines.length ? (
             <ul className="divide-y divide-outline-variant/15">
               {lines.map((line) => (
@@ -121,7 +146,14 @@ export function CheckoutForm({ view }: { view: CheckoutView }) {
                     <p className="text-label-sm text-secondary">{line.kind === "custom" ? "One-off item" : (view.appointment.staffName ?? "Unassigned")}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-body-md font-medium text-on-surface">{money(line.priceCents)}</span>
+                    <Input
+                      aria-label={`Price for ${line.name}`}
+                      inputMode="decimal"
+                      className="w-28 text-right"
+                      value={line.priceText}
+                      onChange={(e) => setLines((current) => current.map((l) => (l.key === line.key ? { ...l, priceText: e.target.value } : l)))}
+                      aria-invalid={priceOf(line) === null ? true : undefined}
+                    />
                     <Button type="button" variant="ghost" size="sm" className="px-2" aria-label={`Remove ${line.name}`} onClick={() => setLines((current) => current.filter((l) => l.key !== line.key))}>
                       <Icon name="close" size={16} />
                     </Button>
@@ -172,6 +204,80 @@ export function CheckoutForm({ view }: { view: CheckoutView }) {
             </div>
           </div>
         </Card>
+
+        <Card padding="lg" className="p-6 md:p-8">
+          <CardHeader
+            title="Gratuity / Tips"
+            description="Allocate gratuity individually across your team. A team member can have more than one tip."
+            action={
+              <p className="rounded-control bg-primary-container/20 px-3 py-1.5 text-label-md text-on-surface-variant" aria-live="polite">
+                Total Gratuity: <span className="font-headline text-body-lg font-bold text-primary">{money(tip)}</span>
+              </p>
+            }
+          />
+          {tipRows.length ? (
+            <ul className="flex flex-col gap-3">
+              {tipRows.map((row, index) => {
+                const error = tipRowError(row);
+                const touched = row.amount !== "" || row.staffId !== "";
+                return (
+                  <li key={row.id} className="flex flex-col gap-1 rounded-control border border-outline-variant/20 p-3">
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="min-w-48 flex-1">
+                        <Field label="Staff member" htmlFor={`tip-staff-${row.id}`}>
+                          <Select id={`tip-staff-${row.id}`} value={row.staffId} onChange={(e) => updateTipRow(row.id, { staffId: e.target.value })} aria-invalid={error && !row.staffId ? true : undefined}>
+                            <option value="">Select team member</option>
+                            {view.staff.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      </div>
+                      <div className="w-36">
+                        <Field label="Tip amount" htmlFor={`tip-amount-${row.id}`}>
+                          <Input
+                            id={`tip-amount-${row.id}`}
+                            inputMode="decimal"
+                            placeholder="0.00"
+                            value={row.amount}
+                            onChange={(e) => updateTipRow(row.id, { amount: e.target.value })}
+                            aria-invalid={error && row.staffId ? true : undefined}
+                            aria-describedby={error && touched ? `tip-error-${row.id}` : undefined}
+                          />
+                        </Field>
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" className="mb-1 px-2" aria-label={`Remove tip ${index + 1}`} onClick={() => setTipRows((current) => current.filter((r) => r.id !== row.id))}>
+                        <Icon name="close" size={16} />
+                      </Button>
+                    </div>
+                    {error && touched ? (
+                      <p id={`tip-error-${row.id}`} className="text-label-sm text-error">
+                        {error}
+                      </p>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="rounded-control bg-surface-container-low p-4 text-body-sm text-secondary">No tips added. Use “Add Staff Tip” to credit gratuity to a team member.</p>
+          )}
+          {fieldErrors?.tips?.length ? (
+            <p role="alert" className="mt-3 text-label-sm text-error">
+              {fieldErrors.tips[0]}
+            </p>
+          ) : null}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <Button type="button" variant="secondary" size="sm" icon="plus" onClick={addTipRow} disabled={tipRows.length >= MAX_TIP_ROWS || !view.staff.length}>
+              Add Staff Tip
+            </Button>
+            <span className="text-label-sm text-secondary">
+              {!view.staff.length ? "No active team members at this branch." : tipRows.length >= MAX_TIP_ROWS ? `At most ${MAX_TIP_ROWS} tips per bill.` : `${tipRows.length} ${tipRows.length === 1 ? "tip" : "tips"} added`}
+            </span>
+          </div>
+        </Card>
       </div>
 
       <aside className="lg:col-span-4">
@@ -180,10 +286,17 @@ export function CheckoutForm({ view }: { view: CheckoutView }) {
           <dl className="space-y-2 text-body-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-secondary">Subtotal</dt>
-              <dd className="font-medium text-on-surface">{money(total)}</dd>
+              <dd className="font-medium text-on-surface">{money(subtotal)}</dd>
             </div>
+            {tip > 0 && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-secondary">Total Gratuity</dt>
+                <dd className="font-medium text-on-surface">{money(tip)}</dd>
+              </div>
+            )}
           </dl>
-          <div className="mt-3 flex items-center justify-between border-t border-outline-variant/20 pt-3">
+
+          <div className="mt-4 flex items-center justify-between border-t border-outline-variant/20 pt-3">
             <span className="text-label-md text-secondary">Total due</span>
             <span className="font-headline text-headline-sm font-semibold text-on-surface">{money(total)}</span>
           </div>
@@ -257,7 +370,7 @@ export function CheckoutForm({ view }: { view: CheckoutView }) {
               <p role="alert" className="rounded-control bg-error-container p-3 text-body-sm text-on-error-container">
                 {fieldErrors.payments[0]}
               </p>
-            ) : fieldErrors && !fieldErrors.lines ? (
+            ) : fieldErrors && !fieldErrors.lines && !fieldErrors.tips ? (
               <p role="alert" className="rounded-control bg-error-container p-3 text-body-sm text-on-error-container">
                 {Object.values(fieldErrors)[0]?.[0]}
               </p>

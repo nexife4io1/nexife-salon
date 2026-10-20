@@ -10,11 +10,15 @@ import { addDaysToDateString } from "@/lib/dates";
 import {
   APPOINTMENT_STATUSES,
   APPOINTMENT_STATUS_LABELS,
+  UPCOMING_STATUSES,
   appointmentsHref,
   type AppointmentBoard,
   type AppointmentFilters,
 } from "@/server/appointments/schema";
 import { formatDay } from "./format";
+
+/** Upcoming first (the default), then each status, then everything. */
+const STATUS_OPTIONS = ["upcoming", ...APPOINTMENT_STATUSES, "all"] as const;
 
 const navButton = "grid size-10 place-items-center rounded-full text-secondary transition-colors hover:bg-surface-container-high hover:text-on-surface";
 
@@ -30,6 +34,7 @@ export function AppointmentsFilterBar({ board }: { board: Pick<AppointmentBoard,
   };
   const go = (next: Partial<AppointmentFilters>) => startTransition(() => router.replace(href(next)));
   const total = APPOINTMENT_STATUSES.reduce((sum, s) => sum + counts[s], 0);
+  const upcomingCount = UPCOMING_STATUSES.reduce((sum, s) => sum + counts[s], 0);
   const heading = date === today ? "Today" : date === addDaysToDateString(today, 1) ? "Tomorrow" : date === addDaysToDateString(today, -1) ? "Yesterday" : null;
 
   return (
@@ -73,16 +78,23 @@ export function AppointmentsFilterBar({ board }: { board: Pick<AppointmentBoard,
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <fieldset className="flex flex-wrap items-center gap-1 rounded-control bg-surface-container-low p-1">
           <legend className="sr-only">Status</legend>
-          {[undefined, ...APPOINTMENT_STATUSES].map((status) => (
-            <label key={status ?? "all"} className="cursor-pointer">
-              <input type="radio" name="status" value={status ?? ""} checked={filters.status === status} onChange={() => go({ status })} className="peer sr-only" />
+          {STATUS_OPTIONS.map((status) => (
+            <label key={status} className="cursor-pointer">
+              <input
+                type="radio"
+                name="status"
+                value={status}
+                checked={(filters.status ?? "upcoming") === status}
+                onChange={() => go({ status: status === "upcoming" ? undefined : status })}
+                className="peer sr-only"
+              />
               <span
                 className={cn(
                   "block rounded-control px-3 py-1.5 text-label-md text-on-surface-variant transition-colors",
                   "peer-checked:bg-surface-container-lowest peer-checked:text-on-surface peer-checked:shadow-card peer-focus-visible:ring-2 peer-focus-visible:ring-primary-container",
                 )}
               >
-                {status ? `${APPOINTMENT_STATUS_LABELS[status]} (${counts[status]})` : `All (${total})`}
+                {status === "all" ? `All (${total})` : status === "upcoming" ? `Upcoming (${upcomingCount})` : `${APPOINTMENT_STATUS_LABELS[status]} (${counts[status]})`}
               </span>
             </label>
           ))}

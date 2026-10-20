@@ -24,6 +24,14 @@ describe("appointments service (fixture mode)", () => {
     await expect(changeStatus(ctx, { id: fixtureBranches[0].id, status: "cancelled" })).rejects.toMatchObject({ name: "DatabaseNotConfiguredError" });
   });
 
+  it("refuses to edit or delete without a database", async () => {
+    const { updateBooking, deleteAppointment } = await import("@/server/appointments/service");
+    const { bookAppointmentInputSchema } = await import("@/server/appointments/schema");
+    const input = bookAppointmentInputSchema.parse({ branchId: fixtureBranches[0].id, serviceId: fixtureBranches[0].id, type: "walk_in" });
+    await expect(updateBooking(ctx, fixtureBranches[0].id, input)).rejects.toMatchObject({ name: "DatabaseNotConfiguredError" });
+    await expect(deleteAppointment(ctx, fixtureBranches[0].id)).rejects.toMatchObject({ name: "DatabaseNotConfiguredError" });
+  });
+
   it("keeps the fixture branch counts", async () => {
     const { countTodayByBranch } = await import("@/server/appointments/service");
     expect((await countTodayByBranch(fixtureTenants[0].id)).get(fixtureBranches[0].id)).toBe(24);

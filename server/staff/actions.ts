@@ -18,7 +18,7 @@ function readStaffForm(formData: FormData) {
   const breaks = starts
     .map((start, i) => ({ label: labels[i], start, end: ends[i] }))
     .filter((b) => String(b.start ?? "").trim() !== "" || String(b.end ?? "").trim() !== "");
-  return { ...Object.fromEntries(formData), breaks };
+  return { ...Object.fromEntries(formData), breaks, serviceIds: formData.getAll("serviceIds") };
 }
 
 export async function createStaffAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {

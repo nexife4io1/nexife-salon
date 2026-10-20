@@ -1,7 +1,7 @@
 import { check, date, index, integer, smallint, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { id, salon, timestamps } from "./_shared";
-import { appointments, customers, services } from "./operations";
+import { appointments, customers, services, staff } from "./operations";
 import { branches, tenants } from "./tenancy";
 
 /**
@@ -35,6 +35,13 @@ export const invoices = salon.table(
     receiptNumber: text("receipt_number").notNull(),
     currency: text("currency").notNull(),
     subtotalCents: integer("subtotal_cents").notNull(),
+    // Total gratuity on top of the services: total_cents = subtotal_cents + tip_cents. The per-staff split lives in
+    // `invoice_tips` and always sums to this.
+    tipCents: integer("tip_cents").notNull().default(0),
+    // Legacy single-tip fields, written before `invoice_tips` existed. New invoices leave them null; receipts of
+    // old invoices (tip_cents > 0 and no `invoice_tips` rows) are still read from here.
+    tipStaffId: uuid("tip_staff_id").references(() => staff.id, { onDelete: "set null" }),
+    tipStaffName: text("tip_staff_name"),
     totalCents: integer("total_cents").notNull(),
     paidAt: timestamp("paid_at", { withTimezone: true }).notNull().defaultNow(),
     ...timestamps(),
@@ -44,7 +51,7 @@ export const invoices = salon.table(
     uniqueIndex("invoices_tenant_receipt_uq").on(t.tenantId, t.receiptNumber),
     index("invoices_tenant_paid_idx").on(t.tenantId, t.paidAt),
     index("invoices_customer_idx").on(t.customerId),
-    check("invoices_total_chk", sql`${t.totalCents} > 0 and ${t.totalCents} = ${t.subtotalCents}`),
+    check("invoices_total_chk", sql`${t.totalCents} > 0 and ${t.tipCents} >= 0 and ${t.totalCents} = ${t.subtotalCents} + ${t.tipCents}`),
   ],
 );
 
@@ -73,6 +80,35 @@ export const invoiceLines = salon.table(
     index("invoice_lines_invoice_idx").on(t.invoiceId),
     index("invoice_lines_tenant_idx").on(t.tenantId),
     check("invoice_lines_amount_chk", sql`${t.amountCents} >= 0`),
+  ],
+);
+
+/**
+ * One tip allocation: an amount credited to one team member. A bill can have several, including more than one for
+ * the same person. The staff name is a snapshot so the receipt survives renames and removals; `staff_id` is only
+ * a pointer for reporting. The rows of an invoice sum to `invoices.tip_cents` (written in one transaction).
+ */
+export const invoiceTips = salon.table(
+  "invoice_tips",
+  {
+    id: id(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    invoiceId: uuid("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "cascade" }),
+    staffId: uuid("staff_id").references(() => staff.id, { onDelete: "set null" }),
+    staffName: text("staff_name").notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    position: smallint("position").notNull().default(0),
+    ...timestamps(),
+  },
+  (t) => [
+    index("invoice_tips_invoice_idx").on(t.invoiceId),
+    index("invoice_tips_tenant_idx").on(t.tenantId),
+    index("invoice_tips_staff_idx").on(t.staffId),
+    check("invoice_tips_amount_chk", sql`${t.amountCents} > 0`),
   ],
 );
 

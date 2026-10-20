@@ -6,9 +6,10 @@ import { AppError } from "@/server/shared/errors";
 // Cross-domain reads go through other domains' services — never their repositories.
 import * as appointmentsService from "@/server/appointments/service";
 import * as branchesService from "@/server/branches/service";
+import * as staffService from "@/server/staff/service";
 import * as tenantsService from "@/server/tenants/service";
 import * as repo from "./repository";
-import type { BillingOverview, CheckoutLine, CheckoutView, CustomerBilling, ReceiptView, RecordPaymentInput } from "./schema";
+import type { BillingFilters, BillingOverview, CheckoutLine, CheckoutView, CustomerBilling, ReceiptView, RecordPaymentInput } from "./schema";
 
 export function revenueTodayByBranch(tenantId: string, now = new Date()) {
   const { start, end } = utcDayRange(now);
@@ -42,17 +43,21 @@ async function listOpenTickets(tenantId: string) {
     }));
 }
 
-export async function getOverview(tenantId: string, now = new Date()): Promise<BillingOverview> {
+/** `filters.branchId` narrows the payment history only; the day's totals and open tickets stay tenant-wide. */
+export async function getOverview(tenantId: string, now = new Date(), filters: BillingFilters = {}): Promise<BillingOverview> {
   const { start, end } = utcDayRange(now);
-  const [tenant, recent, byBranch, stats, openTickets] = await Promise.all([
+  const [tenant, recent, byBranch, stats, openTickets, branchOverview] = await Promise.all([
     tenantsService.getTenant(tenantId),
-    repo.listRecent(tenantId),
+    repo.listRecent(tenantId, undefined, filters.branchId),
     revenueTodayByBranch(tenantId, now),
     repo.invoiceStatsBetween(tenantId, start, end),
     listOpenTickets(tenantId),
+    branchesService.getOverview(tenantId),
   ]);
   return {
     recent,
+    branches: branchOverview.branches.map((b) => ({ id: b.id, name: b.name })),
+    filters,
     openTickets,
     revenueTodayCents: [...byBranch.values()].reduce((a, b) => a + b, 0),
     averageTicketTodayCents: stats.count ? Math.round(stats.totalCents / stats.count) : null,
@@ -79,16 +84,22 @@ export function invoiceIdsByAppointment(tenantId: string, appointmentIds: string
 
 // --- Checkout ------------------------------------------------------------------------------------------
 
+/** Active team members at a branch: the people a tip can be credited to. */
+async function tipRecipients(tenantId: string, branchId: string): Promise<{ id: string; name: string }[]> {
+  return (await staffService.listStaff(tenantId)).filter((s) => s.active && s.branchId === branchId).map((s) => ({ id: s.id, name: s.name }));
+}
+
 export async function getCheckout(ctx: TenantContext, appointmentId: string): Promise<CheckoutView> {
   const appointment = await appointmentsService.findAppointment(ctx.tenantId, appointmentId);
   if (!appointment) throw new AppError("NOT_FOUND", "Appointment not found.");
 
-  const [tenant, branch, invoiceIds, offered, catalog] = await Promise.all([
+  const [tenant, branch, invoiceIds, offered, catalog, team] = await Promise.all([
     tenantsService.getTenant(ctx.tenantId),
     branchesService.getBranch(ctx.tenantId, appointment.branchId),
     repo.invoiceIdsByAppointment(ctx.tenantId, [appointment.id]),
     branchesService.getBranchServices(ctx, appointment.branchId),
     tenantsService.listTenantServices(ctx.tenantId),
+    tipRecipients(ctx.tenantId, appointment.branchId),
   ]);
   const receiptId = invoiceIds.get(appointment.id) ?? null;
   const offeredIds = new Set(offered.offeredIds);
@@ -105,6 +116,8 @@ export async function getCheckout(ctx: TenantContext, appointmentId: string): Pr
       staffName: appointment.staffName,
       branchName: branch.name,
     },
+    staff: team,
+    defaultTipStaffId: team.some((s) => s.id === appointment.staffId) ? appointment.staffId : null,
     currency: tenant.currency,
     timezone: tenant.timezone,
     lines: appointment.services.map(
@@ -118,7 +131,8 @@ export async function getCheckout(ctx: TenantContext, appointmentId: string): Pr
 /**
  * Turn the submitted bill into trusted lines. Services that were booked keep their booked name and price; a
  * service added at checkout must be an active service this branch offers and is priced from the catalog;
- * one-off items are accepted as typed.
+ * one-off items are accepted as typed. A catalog line may carry a price for this bill only (see
+ * `checkoutLineInputSchema`); the catalog and the appointment's booked price are never changed by it.
  */
 async function resolveLines(ctx: TenantContext, appointment: NonNullable<Awaited<ReturnType<typeof appointmentsService.findAppointment>>>, input: RecordPaymentInput) {
   const booked = new Map(appointment.services.flatMap((s) => (s.serviceId ? [[s.serviceId, s] as const] : [])));
@@ -132,10 +146,10 @@ async function resolveLines(ctx: TenantContext, appointment: NonNullable<Awaited
     if (seen.has(line.serviceId)) throw validation("lines", "Each service can only be billed once");
     seen.add(line.serviceId);
     const snapshot = booked.get(line.serviceId);
-    if (snapshot) return { serviceId: line.serviceId, kind: "catalog" as const, name: snapshot.name, staffName: appointment.staffName, amountCents: snapshot.priceCents };
+    if (snapshot) return { serviceId: line.serviceId, kind: "catalog" as const, name: snapshot.name, staffName: appointment.staffName, amountCents: line.priceCents ?? snapshot.priceCents };
     const service = catalog.get(line.serviceId);
     if (!service || !service.active || !offered.has(service.id)) throw validation("lines", "One of the services isn't available at this branch");
-    return { serviceId: service.id, kind: "catalog" as const, name: service.name, staffName: appointment.staffName, amountCents: service.priceCents };
+    return { serviceId: service.id, kind: "catalog" as const, name: service.name, staffName: appointment.staffName, amountCents: line.priceCents ?? service.priceCents };
   });
 }
 
@@ -155,8 +169,22 @@ export async function recordPayment(ctx: TenantContext, input: RecordPaymentInpu
 
   const tenant = await tenantsService.getTenant(ctx.tenantId);
   const lines = await resolveLines(ctx, appointment, input);
-  const total = lines.reduce((sum, l) => sum + l.amountCents, 0);
-  if (total <= 0) throw validation("lines", "The bill total must be above zero to take payment");
+  const subtotal = lines.reduce((sum, l) => sum + l.amountCents, 0);
+  if (subtotal <= 0) throw validation("lines", "The bill total must be above zero to take payment");
+
+  // Each tip goes to an active team member at the appointment's branch and is paid on top of the services. Names
+  // come from our own records, never the client. One person may appear on several rows.
+  let tips: { amountCents: number; staffId: string; staffName: string }[] = [];
+  if (input.tips.length) {
+    const recipients = new Map((await tipRecipients(ctx.tenantId, appointment.branchId)).map((s) => [s.id, s.name]));
+    tips = input.tips.map((tip) => {
+      const staffName = recipients.get(tip.staffId);
+      if (!staffName) throw validation("tips", "Choose an active team member at this branch for every tip");
+      return { amountCents: tip.amountCents, staffId: tip.staffId, staffName };
+    });
+  }
+  const tipTotal = tips.reduce((sum, t) => sum + t.amountCents, 0);
+  const total = subtotal + tipTotal;
   const paid = input.payments.reduce((sum, p) => sum + p.amountCents, 0);
   if (paid !== total) {
     const difference = formatMoney(Math.abs(total - paid), tenant.currency);
@@ -171,6 +199,7 @@ export async function recordPayment(ctx: TenantContext, input: RecordPaymentInpu
     currency: tenant.currency,
     paidAt: now,
     lines,
+    tips,
     payments: input.payments,
   });
   return { invoiceId: result.id, created: result.ok, customerId: appointment.customerId };
@@ -197,6 +226,8 @@ export async function getReceipt(ctx: TenantContext, invoiceId: string): Promise
     lines: invoice.lines,
     payments: invoice.payments,
     subtotalCents: invoice.subtotalCents,
+    tipCents: invoice.tipCents,
+    tips: invoice.tips,
     totalCents: invoice.totalCents,
   };
 }

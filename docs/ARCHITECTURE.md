@@ -73,6 +73,17 @@ The fixtures are not a store: nothing mutates them. This replaces the POC's
   **TODO (step 1):** connect the app as a non-owner `salon_app` role, because table owners
   bypass RLS. The migration file has the exact SQL.
 
+## Billing: checkout gratuity
+
+- A bill takes any number of tip rows (`tips` in `recordPaymentInputSchema`, at most `MAX_TIP_ROWS`), each an
+  integer-cents amount above zero for one team member. The same person can appear on several rows.
+- `billing/service.recordPayment` resolves every recipient against active staff at the appointment's branch and
+  takes the name from its own records. Payments must equal services + the sum of all tips, exactly.
+- `invoice_tips` stores the breakdown (staff name snapshot, `staff_id` set null on removal, RLS `tenant_isolation`),
+  written in the same transaction as the invoice. `invoices.tip_cents` is the total.
+- `invoices.tip_staff_id` / `tip_staff_name` are legacy single-tip columns (migration 0007). Migration 0008
+  copies them into `invoice_tips`, and `findInvoice` still falls back to them, so old receipts keep rendering.
+
 ## Auth
 
 - The POC's session philosophy is kept: a stateless **HMAC-SHA256 signed cookie**

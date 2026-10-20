@@ -50,6 +50,20 @@
       "when": 1792307720484,
       "tag": "0006_billing_checkout",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792439304266,
+      "tag": "0007_billing_tips",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792503240815,
+      "tag": "0008_billing_tip_allocations",
+      "breakpoints": true
     }
   ]
 }

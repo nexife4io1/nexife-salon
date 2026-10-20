@@ -62,6 +62,20 @@ export function Receipt({ receipt }: { receipt: ReceiptView }) {
           <dt className="text-secondary">Subtotal</dt>
           <dd className="text-on-surface">{money(receipt.subtotalCents)}</dd>
         </div>
+        {receipt.tipCents > 0 && (
+          <>
+            <div className="flex justify-between">
+              <dt className="font-medium text-on-surface">Total gratuity</dt>
+              <dd className="font-medium text-on-surface">{money(receipt.tipCents)}</dd>
+            </div>
+            {receipt.tips.map((tip) => (
+              <div key={tip.id} className="flex justify-between pl-4">
+                <dt className="text-secondary">Tip for {tip.staffName}</dt>
+                <dd className="text-on-surface">{money(tip.amountCents)}</dd>
+              </div>
+            ))}
+          </>
+        )}
         {receipt.payments.map((p) => (
           <div key={p.id} className="flex justify-between">
             <dt className="text-secondary">Paid by {PAYMENT_METHOD_LABELS[p.method]}</dt>

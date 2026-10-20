@@ -208,3 +208,61 @@ describe("staff management", () => {
     await expect(staff.updateStaff(ctxFor(t.id), id, parse({ name: "Stays Put II", branchId: second.id }))).resolves.toBeUndefined();
   });
 });
+
+describe("staff services", () => {
+  /** A tenant whose branch offers Haircut but not Balayage. */
+  async function tenantWithOffering(slug: string) {
+    const t = await newTenant(slug);
+    const catalog = await db.select().from(tables.services).where(eq(tables.services.tenantId, t.id));
+    const id = (name: string) => catalog.find((s) => s.name === name)!.id;
+    await branches.setBranchServices(ctxFor(t.id), t.branchId, [id("Haircut")]);
+    return { ...t, haircut: id("Haircut"), balayage: id("Balayage") };
+  }
+
+  it("offers the active catalog and each branch's offering to the form", async () => {
+    const t = await tenantWithOffering("svc-options");
+    const options = await staff.getFormOptions(ctxFor(t.id));
+    expect(options.services.map((s) => s.name).sort()).toEqual(["Balayage", "Haircut"]);
+    expect(options.offeredByBranch[t.branchId]).toEqual([t.haircut]);
+  });
+
+  it("saves, replaces and clears the assigned services and reads them back", async () => {
+    const t = await tenantWithOffering("svc-save");
+    const { id } = await staff.createStaff(ctxFor(t.id), parse({ name: "Sam Stylist", branchId: t.branchId, serviceIds: [t.haircut] }));
+    expect((await staff.getProfile(ctxFor(t.id), id)).serviceIds).toEqual([t.haircut]);
+    expect((await staff.listServiceAssignments(t.id)).get(id)).toEqual([t.haircut]);
+
+    await branches.setBranchServices(ctxFor(t.id), t.branchId, [t.haircut, t.balayage]);
+    await staff.updateStaff(ctxFor(t.id), id, parse({ name: "Sam Stylist", branchId: t.branchId, serviceIds: [t.balayage] }));
+    expect((await staff.getProfile(ctxFor(t.id), id)).serviceIds).toEqual([t.balayage]);
+
+    await staff.updateStaff(ctxFor(t.id), id, parse({ name: "Sam Stylist", branchId: t.branchId }));
+    expect((await staff.getProfile(ctxFor(t.id), id)).serviceIds).toEqual([]);
+    expect(await db.select().from(tables.staffServices).where(eq(tables.staffServices.staffId, id))).toHaveLength(0);
+  });
+
+  it("only accepts active services the staff member's branch offers", async () => {
+    const t = await tenantWithOffering("svc-validate");
+    const rejected = { code: "VALIDATION", fieldErrors: { serviceIds: [expect.stringContaining("branch offers")] } };
+    await expect(staff.createStaff(ctxFor(t.id), parse({ name: "Not Offered", branchId: t.branchId, serviceIds: [t.balayage] }))).rejects.toMatchObject(rejected);
+    await expect(staff.createStaff(ctxFor(t.id), parse({ name: "Unknown", branchId: t.branchId, serviceIds: ["7d3c9f62-1d0a-4e1b-9a55-2b6f0c1e0a02"] }))).rejects.toMatchObject(rejected);
+
+    const other = await tenantWithOffering("svc-validate-other");
+    await expect(staff.createStaff(ctxFor(t.id), parse({ name: "Cross Tenant", branchId: t.branchId, serviceIds: [other.haircut] }))).rejects.toMatchObject(rejected);
+
+    // Moving to a branch that doesn't offer the selection fails too, and nothing is half-saved.
+    const { id } = await staff.createStaff(ctxFor(t.id), parse({ name: "Mover", branchId: t.branchId, serviceIds: [t.haircut] }));
+    const second = await branches.createBranch(ctxFor(t.id), { name: "Second", addressLine: "2 Side St", status: "active", serviceIds: [t.balayage] });
+    await expect(staff.updateStaff(ctxFor(t.id), id, parse({ name: "Mover", branchId: second.id, serviceIds: [t.haircut] }))).rejects.toMatchObject(rejected);
+    expect((await staff.getProfile(ctxFor(t.id), id)).serviceIds).toEqual([t.haircut]);
+    expect(await db.select().from(tables.staff).where(eq(tables.staff.tenantId, other.id))).toHaveLength(0);
+  });
+
+  it("keeps assignments private to the tenant", async () => {
+    const a = await tenantWithOffering("svc-iso-a");
+    const b = await tenantWithOffering("svc-iso-b");
+    const { id } = await staff.createStaff(ctxFor(a.id), parse({ name: "A Person", branchId: a.branchId, serviceIds: [a.haircut] }));
+    expect((await staff.listServiceAssignments(b.id)).size).toBe(0);
+    await expect(staff.getProfile(ctxFor(b.id), id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+});

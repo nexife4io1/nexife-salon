@@ -46,7 +46,7 @@ async function newTenant(slug: string, timezone = "UTC") {
   };
 }
 
-const book = (t: T, over: Partial<Record<keyof BookInput, string>> = {}, now?: Date) =>
+const book = (t: T, over: Partial<Record<keyof BookInput, string | string[]>> = {}, now?: Date) =>
   appts.book(
     t.ctx,
     schema.bookAppointmentInputSchema.parse({ branchId: t.branchId, serviceId: t.haircut, customerId: t.customerId, date: "2026-10-20", time: "10:00", ...over }),
@@ -54,6 +54,8 @@ const book = (t: T, over: Partial<Record<keyof BookInput, string>> = {}, now?: D
   );
 
 const NOW = new Date("2026-10-16T08:00:00Z");
+/** After every 2026-10-20 booking in these tests has started (No-show is only allowed then). */
+const AFTER_START = new Date("2026-10-21T00:00:00Z");
 const board = (t: T, raw: Record<string, string> = {}) => appts.getBoard(t.ctx, schema.parseAppointmentFilters(raw), NOW);
 
 beforeAll(async () => {
@@ -193,7 +195,7 @@ describe("staff conflicts", () => {
     const first = await book(t, { staffId: sam, time: "10:00" });
     await appts.changeStatus(t.ctx, { id: first.id, status: "cancelled" });
     const again = await book(t, { staffId: sam, time: "10:00" });
-    await appts.changeStatus(t.ctx, { id: again.id, status: "no_show" });
+    await appts.changeStatus(t.ctx, { id: again.id, status: "no_show" }, AFTER_START);
     const third = await book(t, { staffId: sam, time: "10:00" });
     for (const status of ["checked_in", "in_service", "completed"] as const) await appts.changeStatus(t.ctx, { id: third.id, status });
     await expect(book(t, { staffId: sam, time: "10:15" })).rejects.toMatchObject({ code: "CONFLICT" });
@@ -307,7 +309,7 @@ describe("status changes", () => {
     const { id } = await book(t);
     for (const status of ["checked_in", "in_service", "completed"] as const) {
       await appts.changeStatus(t.ctx, { id, status });
-      expect((await board(t, { date: "2026-10-20" })).appointments[0]!.status).toBe(status);
+      expect((await board(t, { date: "2026-10-20", status: "all" })).appointments[0]!.status).toBe(status);
     }
   });
 
@@ -320,7 +322,7 @@ describe("status changes", () => {
     for (const status of ["checked_in", "no_show", "cancelled"] as const) {
       await expect(appts.changeStatus(t.ctx, { id, status })).rejects.toMatchObject({ code: "CONFLICT" });
     }
-    expect((await board(t, { date: "2026-10-20" })).appointments[0]!.status).toBe("cancelled");
+    expect((await board(t, { date: "2026-10-20", status: "all" })).appointments[0]!.status).toBe("cancelled");
   });
 
   it("allows no-show only before check-in and cancel until service starts", async () => {
@@ -341,5 +343,155 @@ describe("status changes", () => {
     expect(schema.canTransition("booked", "checked_in")).toBe(true);
     expect(schema.canTransition("completed", "cancelled")).toBe(false);
     expect(schema.STATUS_TRANSITIONS.no_show).toEqual([]);
+  });
+});
+
+describe("default board view", () => {
+  it("shows upcoming work by default and keeps every other filter selectable", async () => {
+    const t = await newTenant("default-view");
+    const open = await book(t, { time: "09:00" });
+    const done = await book(t, { time: "10:00" });
+    for (const status of ["checked_in", "in_service", "completed"] as const) await appts.changeStatus(t.ctx, { id: done.id, status });
+    const cancelled = await book(t, { time: "11:00" });
+    await appts.changeStatus(t.ctx, { id: cancelled.id, status: "cancelled" });
+
+    const ids = async (raw: Record<string, string>) => (await board(t, { date: "2026-10-20", ...raw })).appointments.map((a) => a.id);
+    expect(await ids({})).toEqual([open.id]);
+    expect(await ids({ status: "all" })).toEqual([open.id, done.id, cancelled.id]);
+    expect(await ids({ status: "completed" })).toEqual([done.id]);
+    expect(await ids({ status: "cancelled" })).toEqual([cancelled.id]);
+    expect((await board(t, { date: "2026-10-20" })).counts).toMatchObject({ booked: 1, completed: 1, cancelled: 1 });
+  });
+
+  it("parses the status filter, treating junk and 'upcoming' as the default", () => {
+    expect(schema.parseAppointmentFilters({ status: "all" }).status).toBe("all");
+    expect(schema.parseAppointmentFilters({ status: "completed" }).status).toBe("completed");
+    expect(schema.parseAppointmentFilters({ status: "upcoming" }).status).toBeUndefined();
+    expect(schema.parseAppointmentFilters({ status: "nope" }).status).toBeUndefined();
+    expect(schema.appointmentsHref({ status: "all" })).toBe("/appointments?status=all");
+    expect(schema.appointmentsHref({})).toBe("/appointments");
+  });
+});
+
+describe("no-show timing and walk-ins", () => {
+  it("allows no-show only once the scheduled start has passed", async () => {
+    const t = await newTenant("noshow");
+    const { id } = await book(t, { time: "10:00" }); // 2026-10-20T10:00Z
+    await expect(appts.changeStatus(t.ctx, { id, status: "no_show" }, new Date("2026-10-20T09:59:00Z"))).rejects.toMatchObject({ code: "CONFLICT", message: expect.stringContaining("start time") });
+    await appts.changeStatus(t.ctx, { id, status: "no_show" }, new Date("2026-10-20T10:00:00Z"));
+    expect((await board(t, { date: "2026-10-20", status: "no_show" })).appointments).toHaveLength(1);
+  });
+
+  it("compares instants, so the tenant's timezone decides when the start passes", async () => {
+    const t = await newTenant("noshow-tz", "Asia/Kolkata");
+    const { id } = await book(t, { time: "09:00" }); // 03:30Z
+    await expect(appts.changeStatus(t.ctx, { id, status: "no_show" }, new Date("2026-10-20T03:29:00Z"))).rejects.toMatchObject({ code: "CONFLICT" });
+    await appts.changeStatus(t.ctx, { id, status: "no_show" }, new Date("2026-10-20T03:31:00Z"));
+  });
+
+  it("never lets a walk-in be marked no-show, but can still cancel it", async () => {
+    const t = await newTenant("walkin-rules");
+    const { id } = await book(t, { type: "walk_in", customerId: "", date: "", time: "" }, NOW);
+    await expect(appts.changeStatus(t.ctx, { id, status: "no_show" }, AFTER_START)).rejects.toMatchObject({ code: "CONFLICT" });
+    await appts.changeStatus(t.ctx, { id, status: "cancelled" });
+    expect(schema.canMarkNoShow({ type: "walk_in", status: "booked", startsAt: NOW }, AFTER_START)).toBe(false);
+    expect(schema.canEditAppointment({ type: "walk_in", status: "booked" })).toBe(false);
+  });
+});
+
+describe("editing and rescheduling", () => {
+  const edit = (t: T, id: string, over: Partial<Record<keyof BookInput, string | string[]>> = {}, now?: Date) =>
+    appts.updateBooking(
+      t.ctx,
+      id,
+      schema.bookAppointmentInputSchema.parse({ branchId: t.branchId, serviceId: t.haircut, customerId: t.customerId, date: "2026-10-20", time: "10:00", ...over }),
+      now ?? NOW,
+    );
+
+  it("moves a booking, swaps its services and keeps a single appointment", async () => {
+    const t = await newTenant("edit");
+    const sam = await t.member("Sam Stylist");
+    const { id } = await book(t, { staffId: sam, time: "10:00" });
+    const result = await edit(t, id, { staffId: sam, serviceId: [t.haircut, t.color], date: "2026-10-22", time: "14:30", notes: "Moved" });
+    expect(result.date).toBe("2026-10-22");
+
+    expect((await board(t, { date: "2026-10-20", status: "all" })).appointments).toHaveLength(0);
+    const [moved] = (await board(t, { date: "2026-10-22" })).appointments;
+    expect(moved).toMatchObject({ id, serviceName: "Haircut, Color", durationMinutes: 120, notes: "Moved", staffName: "Sam Stylist" });
+    expect(moved!.startsAt.toISOString()).toBe("2026-10-22T14:30:00.000Z");
+    expect(await db.select().from(tables.appointmentServices).where(eq(tables.appointmentServices.appointmentId, id))).toHaveLength(2);
+
+    const editable = await appts.getEditable(t.ctx, id);
+    expect(editable).toMatchObject({ date: "2026-10-22", time: "14:30", staffId: sam, serviceIds: [t.haircut, t.color] });
+  });
+
+  it("does not collide with itself but still rejects another booking's slot", async () => {
+    const t = await newTenant("edit-conflict");
+    const sam = await t.member("Sam Stylist");
+    const a = await book(t, { staffId: sam, time: "10:00" }); // 10:00-10:30
+    await book(t, { staffId: sam, time: "11:00" }); // 11:00-11:30
+    await expect(edit(t, a.id, { staffId: sam, time: "10:15" })).resolves.toBeTruthy(); // overlaps only its old self
+    await expect(edit(t, a.id, { staffId: sam, time: "11:15" })).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  it("applies the booking rules: branch services, staff qualifications, other tenants", async () => {
+    const t = await newTenant("edit-rules");
+    const kim = await t.member("Kim Colorist");
+    await db.insert(tables.staffServices).values({ tenantId: t.id, staffId: kim, serviceId: t.color });
+    const other = await newTenant("edit-rules-other");
+    const { id } = await book(t);
+
+    await expect(edit(t, id, { serviceId: t.perm })).rejects.toMatchObject({ fieldErrors: { serviceId: [expect.stringContaining("doesn't offer")] } });
+    await expect(edit(t, id, { staffId: kim, serviceId: t.haircut })).rejects.toMatchObject({ fieldErrors: { staffId: [expect.stringContaining("doesn't perform")] } });
+    await expect(edit(t, id, { customerId: other.customerId })).rejects.toMatchObject({ fieldErrors: { customerId: expect.any(Array) } });
+    await expect(edit(t, id, { date: "2026-10-15" })).rejects.toMatchObject({ fieldErrors: { time: [expect.stringContaining("passed")] } });
+    await expect(edit(other, id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(appts.getEditable(other.ctx, id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("refuses walk-ins and bookings that are already under way", async () => {
+    const t = await newTenant("edit-refused");
+    const walkIn = await book(t, { type: "walk_in", customerId: "", date: "", time: "" }, NOW);
+    await expect(edit(t, walkIn.id)).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(appts.getEditable(t.ctx, walkIn.id)).rejects.toMatchObject({ code: "CONFLICT" });
+
+    const started = await book(t);
+    await appts.changeStatus(t.ctx, { id: started.id, status: "checked_in" });
+    await expect(edit(t, started.id)).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  it("lets a booking whose time has passed keep that time while other details change", async () => {
+    const t = await newTenant("edit-keep-time");
+    const { id } = await book(t, { time: "10:00" });
+    await expect(edit(t, id, { time: "10:00", notes: "Late but fine" }, new Date("2026-10-20T12:00:00Z"))).resolves.toBeTruthy();
+  });
+});
+
+describe("deleting", () => {
+  it("permanently removes the appointment and its service lines, and only for its own tenant", async () => {
+    const t = await newTenant("delete");
+    const other = await newTenant("delete-other");
+    const { id } = await book(t, { serviceId: [t.haircut, t.color] });
+    const keep = await book(t, { time: "15:00" });
+
+    await expect(appts.deleteAppointment(other.ctx, id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(await db.select().from(tables.appointments).where(eq(tables.appointments.id, id))).toHaveLength(1);
+
+    expect(await appts.deleteAppointment(t.ctx, id)).toEqual({ customerId: t.customerId });
+    expect(await db.select().from(tables.appointments).where(eq(tables.appointments.id, id))).toHaveLength(0);
+    expect(await db.select().from(tables.appointmentServices).where(eq(tables.appointmentServices.appointmentId, id))).toHaveLength(0);
+    expect(await db.select().from(tables.appointmentServices).where(eq(tables.appointmentServices.appointmentId, keep.id))).toHaveLength(1);
+    await expect(appts.deleteAppointment(t.ctx, id)).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("can delete a cancelled, completed or walk-in appointment", async () => {
+    const t = await newTenant("delete-any");
+    const cancelled = await book(t, { time: "09:00" });
+    await appts.changeStatus(t.ctx, { id: cancelled.id, status: "cancelled" });
+    const walkIn = await book(t, { type: "walk_in", customerId: "", date: "", time: "" }, NOW);
+    const done = await book(t, { time: "12:00" });
+    for (const status of ["checked_in", "in_service", "completed"] as const) await appts.changeStatus(t.ctx, { id: done.id, status });
+    for (const { id } of [cancelled, walkIn, done]) await appts.deleteAppointment(t.ctx, id);
+    expect(await db.select().from(tables.appointments).where(eq(tables.appointments.tenantId, t.id))).toHaveLength(0);
   });
 });

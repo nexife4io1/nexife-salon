@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PageSection } from "@/components/ui/page-section";
 import { StatTile } from "@/components/ui/stat-tile";
 import { TableShell, type TableColumn } from "@/components/ui/table-shell";
+import { BillingBranchFilter } from "@/components/views/billing/billing-branch-filter";
 import { DemoDataBadge } from "@/components/views/shared/demo-data-badge";
 import { formatMoney } from "@/lib/format";
 import { getBillingOverview } from "@/server/billing/queries";
@@ -20,9 +21,17 @@ type TicketRow = Overview["openTickets"][number];
 
 const dateFmt = (at: Date, timeZone: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone }).format(at);
 
-function paymentColumns(currency: string, timezone: string): TableColumn<PaymentRow>[] {
+function paymentColumns(currency: string, timezone: string, branchNames: Map<string, string>): TableColumn<PaymentRow>[] {
   return [
     { key: "paidAt", header: "When", cellClassName: "text-secondary", renderCell: (payment) => dateFmt(payment.paidAt, timezone) },
+    {
+      key: "customer",
+      header: "Customer",
+      cellClassName: "font-medium text-on-surface",
+      // A payment with no bill (older data) has no customer on record; a bill without one is a walk-in.
+      renderCell: (payment) => (payment.invoiceId ? (payment.customerName ?? "Walk-in") : <span className="text-secondary">—</span>),
+    },
+    { key: "branch", header: "Branch", cellClassName: "text-secondary", renderCell: (payment) => branchNames.get(payment.branchId) ?? "—" },
     {
       key: "receipt",
       header: "Receipt",
@@ -59,8 +68,9 @@ function ticketColumns(currency: string, timezone: string): TableColumn<TicketRo
   ];
 }
 
-export default async function BillingPage() {
-  const { recent, openTickets, revenueTodayCents, averageTicketTodayCents, currency, timezone, source } = await getBillingOverview();
+export default async function BillingPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { recent, branches, filters, openTickets, revenueTodayCents, averageTicketTodayCents, currency, timezone, source } = await getBillingOverview(await searchParams);
+  const branchNames = new Map(branches.map((b) => [b.id, b.name]));
 
   return (
     <>
@@ -81,12 +91,18 @@ export default async function BillingPage() {
         />
       </PageSection>
 
-      <PageSection title="Recent payments">
+      <PageSection title="Recent payments" action={branches.length > 1 || filters.branchId ? <BillingBranchFilter branches={branches} branchId={filters.branchId} /> : undefined}>
         <TableShell
-          columns={paymentColumns(currency, timezone)}
+          columns={paymentColumns(currency, timezone, branchNames)}
           rows={recent}
           rowKey={(payment) => payment.id}
-          empty={<EmptyState icon="receipt" title="No payments recorded" description="Payments will appear here as you check clients out." />}
+          empty={
+            filters.branchId ? (
+              <EmptyState icon="receipt" title="No payments for this branch" description="Choose another branch, or all branches, to see more." />
+            ) : (
+              <EmptyState icon="receipt" title="No payments recorded" description="Payments will appear here as you check clients out." />
+            )
+          }
         />
       </PageSection>
     </>

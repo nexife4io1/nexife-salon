@@ -30,6 +30,7 @@ export type Weekday = z.infer<typeof weekdaySchema>;
 export const WEEKDAY_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 
 export const MAX_BREAKS = 4;
+export const MAX_STAFF_SERVICES = 200;
 
 // --- Read models -----------------------------------------------------------------------------------
 
@@ -75,13 +76,22 @@ export type StaffProfile = StaffListItem & {
   casualLeaves: number | null;
   recruitmentSource: string | null;
   schedule: StaffSchedule;
+  /** Services this person performs (empty = no restriction: they can take any service their branch offers). */
+  serviceIds: string[];
 };
 
 export type StaffBranchOption = { id: string; name: string; status: "active" | "inactive" | "opening_soon" };
 
+/** A catalog service the staff form can assign. */
+export type StaffServiceOption = { id: string; name: string; category: string | null; durationMinutes: number; priceCents: number };
+
 /** Options the add/edit form needs. */
 export type StaffFormOptions = {
   branches: StaffBranchOption[];
+  /** Active catalog services; a staff member may only be given ones their branch offers. */
+  services: StaffServiceOption[];
+  /** Service ids each branch offers. */
+  offeredByBranch: Record<string, string[]>;
   currency: string;
   source: "database" | "demo";
 };
@@ -193,6 +203,12 @@ export const staffInputSchema = z
     shiftStart: optionalClockTime,
     shiftEnd: optionalClockTime,
     breaks: z.array(staffBreakInputSchema).max(MAX_BREAKS, `At most ${MAX_BREAKS} breaks`).default([]),
+
+    serviceIds: z
+      .array(z.string().uuid("Choose a valid service"))
+      .max(MAX_STAFF_SERVICES, `At most ${MAX_STAFF_SERVICES} services`)
+      .refine((ids) => new Set(ids).size === ids.length, "Each service can only be added once")
+      .default([]),
   })
   .superRefine((v, ctx) => {
     const issue = (path: (string | number)[], message: string) => ctx.addIssue({ code: "custom", path, message });
@@ -248,6 +264,7 @@ export type StaffWrite = {
   weeklyOffDay: number | null;
   hours: WorkingHours[];
   breaks: StaffBreak[];
+  serviceIds: string[];
 };
 
 // --- Form / URL helpers (pure, shared with the client form and filter bar) -------------------------

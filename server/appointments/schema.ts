@@ -25,6 +25,9 @@ export const FALLBACK_DURATION_MINUTES = 30;
 /** Statuses that still hold the staff member's time (cancelled / no-show free the slot). */
 export const SLOT_HOLDING_STATUSES = ["booked", "checked_in", "in_service", "completed"] as const satisfies readonly AppointmentStatus[];
 
+/** Statuses of an appointment that still has work to do: what the board shows by default. */
+export const UPCOMING_STATUSES = ["booked", "checked_in", "in_service"] as const satisfies readonly AppointmentStatus[];
+
 /** Legal status moves. Terminal states (completed, cancelled, no_show) have none. */
 export const STATUS_TRANSITIONS: Record<AppointmentStatus, readonly AppointmentStatus[]> = {
   booked: ["checked_in", "cancelled", "no_show"],
@@ -37,6 +40,16 @@ export const STATUS_TRANSITIONS: Record<AppointmentStatus, readonly AppointmentS
 
 export function canTransition(from: AppointmentStatus, to: AppointmentStatus): boolean {
   return STATUS_TRANSITIONS[from].includes(to);
+}
+
+/** Only a booking that hasn't been checked in can be edited or rescheduled; walk-ins never can. */
+export function canEditAppointment(a: { type: AppointmentType; status: AppointmentStatus }): boolean {
+  return a.type === "booking" && a.status === "booked";
+}
+
+/** No-show means the client didn't turn up, so it only makes sense once the scheduled start has passed. */
+export function canMarkNoShow(a: { type: AppointmentType; status: AppointmentStatus; startsAt: Date }, now: Date): boolean {
+  return a.type === "booking" && canTransition(a.status, "no_show") && a.startsAt.getTime() <= now.getTime();
 }
 
 /** One booked service, as snapshotted when the appointment was made (name, price and duration never change later). */
@@ -128,13 +141,32 @@ export const changeAppointmentStatusInputSchema = z.object({
 });
 export type ChangeAppointmentStatusInput = z.infer<typeof changeAppointmentStatusInputSchema>;
 
+export const deleteAppointmentInputSchema = z.object({ id: z.string().uuid("Appointment not found") });
+export type DeleteAppointmentInput = z.infer<typeof deleteAppointmentInputSchema>;
+
+/** An existing booking, in the shape the edit form needs (date/time are tenant-local wall-clock values). */
+export type EditableAppointment = {
+  id: string;
+  branchId: string;
+  customerId: string | null;
+  serviceIds: string[];
+  staffId: string | null;
+  date: string;
+  time: string;
+  notes: string | null;
+};
+
 // --- Board filters (live in the URL) -----------------------------------------------------------------
+
+/** "upcoming" (the default) = booked, checked in or in service; "all" = every status. */
+export type AppointmentStatusFilter = AppointmentStatus | "upcoming" | "all";
 
 export type AppointmentFilters = {
   /** "YYYY-MM-DD" in the tenant timezone; undefined = today. */
   date?: string;
   branchId?: string;
-  status?: AppointmentStatus;
+  /** undefined = "upcoming". */
+  status?: AppointmentStatusFilter;
 };
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
@@ -143,11 +175,12 @@ const first = (value: string | string[] | undefined) => (Array.isArray(value) ? 
 export function parseAppointmentFilters(raw: Record<string, string | string[] | undefined>): AppointmentFilters {
   const date = first(raw.date);
   const branchId = first(raw.branchId);
-  const status = appointmentStatusSchema.safeParse(first(raw.status));
+  const rawStatus = first(raw.status);
+  const status = appointmentStatusSchema.safeParse(rawStatus);
   return {
     date: date && isValidDateString(date) ? date : undefined,
     branchId: branchId && z.string().uuid().safeParse(branchId).success ? branchId : undefined,
-    status: status.success ? status.data : undefined,
+    status: status.success ? status.data : rawStatus === "all" ? "all" : undefined,
   };
 }
 
@@ -166,6 +199,8 @@ export type AppointmentBoard = {
   /** The displayed day, "YYYY-MM-DD" in `timezone`. */
   date: string;
   today: string;
+  /** The instant the board was built, so "has it started yet" is decided on the server. */
+  now: Date;
   timezone: string;
   filters: AppointmentFilters;
   appointments: Appointment[];
@@ -188,6 +223,8 @@ export type BookingOptions = {
   /** Service ids each branch offers. */
   offeredByBranch: Record<string, string[]>;
   staff: { id: string; name: string; title: string | null; branchId: string | null }[];
+  /** Service ids each staff member performs. Staff absent from the map have declared none and can take any service. */
+  staffServices: Record<string, string[]>;
   customers: { id: string; name: string; phone: string | null }[];
   source: "database" | "demo";
 };

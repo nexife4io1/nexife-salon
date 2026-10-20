@@ -2,7 +2,7 @@ import "server-only";
 import { notFound } from "next/navigation";
 import { getTenantContext, requireTenantContext } from "@/server/shared/context";
 import { AppError } from "@/server/shared/errors";
-import { invoiceIdSchema } from "./schema";
+import { invoiceIdSchema, parseBillingFilters } from "./schema";
 import * as service from "./service";
 
 /** 404s for malformed ids and for records that don't exist in the caller's tenant. */
@@ -16,9 +16,10 @@ async function orNotFound<T>(id: string, read: () => Promise<T>): Promise<T> {
   }
 }
 
-export async function getBillingOverview() {
+/** `rawFilters` are the page's search params (currently `branchId`, which narrows the payment history). */
+export async function getBillingOverview(rawFilters: Record<string, string | string[] | undefined> = {}) {
   const ctx = await requireTenantContext("billing");
-  return service.getOverview(ctx.tenantId);
+  return service.getOverview(ctx.tenantId, new Date(), parseBillingFilters(rawFilters));
 }
 
 /** Everything the checkout screen needs for one appointment. */

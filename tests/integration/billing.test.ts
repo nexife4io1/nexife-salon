@@ -291,7 +291,8 @@ describe("recording payment", () => {
         currency: "USD",
         paidAt: NOW,
         lines: [{ serviceId: null, kind: "custom", name: "x", staffName: null, amountCents: 100 }],
-        payments: [{ method: "cash", amountCents: 100 }],
+        tips: [{ amountCents: 50, staffId: t.member, staffName: "Sam Stylist" }],
+        payments: [{ method: "cash", amountCents: 150 }],
       }),
     ).rejects.toThrow();
     expect(await db.select().from(tables.invoices).where(eq(tables.invoices.tenantId, t.id))).toHaveLength(0);
@@ -331,5 +332,239 @@ describe("receipt availability and tenant isolation", () => {
     const b = await newTenant("iso-svc-b");
     const id = await completedAppointment(a, { serviceId: a.haircut });
     await expect(pay(a, id, { lines: [{ kind: "catalog", serviceId: b.color }], payments: [{ method: "cash", amountCents: 8_000 }] })).rejects.toMatchObject({ code: "VALIDATION" });
+  });
+});
+
+describe("editing a service price on the bill", () => {
+  it("bills the edited price on this invoice only, leaving the catalog and the booking untouched", async () => {
+    const t = await newTenant("price-edit");
+    const id = await completedAppointment(t);
+    const { invoiceId } = await pay(t, id, {
+      lines: [{ kind: "catalog", serviceId: t.haircut, priceCents: 3_500 }, { kind: "catalog", serviceId: t.color }],
+      payments: [{ method: "cash", amountCents: 11_500 }], // 3,500 (edited) + 8,000
+    });
+    const receipt = await billing.getReceipt(t.ctx, invoiceId);
+    expect(receipt.lines.map((l) => [l.name, l.amountCents])).toEqual([["Haircut", 3_500], ["Color", 8_000]]);
+    expect(receipt).toMatchObject({ subtotalCents: 11_500, tipCents: 0, totalCents: 11_500 });
+
+    const catalog = await db.select().from(tables.services).where(eq(tables.services.id, t.haircut));
+    expect(catalog[0]!.priceCents).toBe(4_000);
+    const booked = await db.select().from(tables.appointmentServices).where(eq(tables.appointmentServices.appointmentId, id));
+    expect(booked.map((l) => l.priceCents).sort()).toEqual([4_000, 8_000]);
+  });
+
+  it("also prices a service added at checkout, and still requires payments to match the edited total", async () => {
+    const t = await newTenant("price-edit-added");
+    const id = await completedAppointment(t, { serviceId: t.haircut });
+    await expect(pay(t, id, { lines: [{ kind: "catalog", serviceId: t.color, priceCents: 7_000 }], payments: [{ method: "cash", amountCents: 8_000 }] })).rejects.toMatchObject({
+      code: "VALIDATION",
+      fieldErrors: { payments: [expect.stringContaining("bill is $70")] },
+    });
+    const { invoiceId } = await pay(t, id, { lines: [{ kind: "catalog", serviceId: t.color, priceCents: 7_000 }], payments: [{ method: "cash", amountCents: 7_000 }] });
+    expect((await billing.getReceipt(t.ctx, invoiceId)).totalCents).toBe(7_000);
+  });
+
+  it("rejects unusable prices", () => {
+    const parse = (priceCents: unknown) =>
+      billingSchema.recordPaymentInputSchema.safeParse({
+        appointmentId: "7d3c9f62-1d0a-4e1b-9a55-2b6f0c1e0a01",
+        lines: [{ kind: "catalog", serviceId: "7d3c9f62-1d0a-4e1b-9a55-2b6f0c1e0a02", priceCents }],
+        payments: [{ method: "cash", amountCents: 100 }],
+      }).success;
+    expect(parse(0)).toBe(true);
+    expect(parse(undefined)).toBe(true);
+    expect(parse(-1)).toBe(false);
+    expect(parse(10.5)).toBe(false);
+    expect(parse(billingSchema.MAX_LINE_CENTS + 1)).toBe(false);
+  });
+});
+
+describe("tips", () => {
+  it("splits the tip across several team members, on top of the services, and shows each on the receipt", async () => {
+    const t = await newTenant("tip");
+    const second = (await staff.createStaff(t.ctx, staffSchema.staffInputSchema.parse({ name: "Robin Assistant", branchId: t.branchId }))).id;
+    const id = await completedAppointment(t);
+    const checkout = await billing.getCheckout(t.ctx, id);
+    expect(checkout.staff.map((s) => s.name).sort()).toEqual(["Robin Assistant", "Sam Stylist"]);
+    expect(checkout.defaultTipStaffId).toBe(t.member);
+
+    const { invoiceId } = await pay(t, id, {
+      tips: [
+        { amountCents: 1_500, staffId: t.member },
+        { amountCents: 500, staffId: second },
+      ],
+      payments: [{ method: "cash", amountCents: 11_000 }, { method: "card", amountCents: 3_000 }],
+    });
+    const receipt = await billing.getReceipt(t.ctx, invoiceId);
+    expect(receipt).toMatchObject({ subtotalCents: 12_000, tipCents: 2_000, totalCents: 14_000 });
+    expect(receipt.tips.map((x) => [x.staffName, x.amountCents])).toEqual([["Sam Stylist", 1_500], ["Robin Assistant", 500]]);
+    const [invoice] = await db.select().from(tables.invoices).where(eq(tables.invoices.id, invoiceId));
+    expect(invoice).toMatchObject({ subtotalCents: 12_000, tipCents: 2_000, tipStaffId: null, tipStaffName: null, totalCents: 14_000 });
+    const rows = await db.select().from(tables.invoiceTips).where(eq(tables.invoiceTips.invoiceId, invoiceId));
+    expect(rows.map((r) => r.staffId).sort()).toEqual([t.member, second].sort());
+    expect(rows.reduce((sum, r) => sum + r.amountCents, 0)).toBe(invoice!.tipCents);
+    const ledger = await db.select().from(tables.payments).where(eq(tables.payments.invoiceId, invoiceId));
+    expect(ledger.reduce((sum, p) => sum + p.amountCents, 0)).toBe(14_000);
+  });
+
+  it("allows several tip rows for the same team member and keeps them separate", async () => {
+    const t = await newTenant("tip-repeat");
+    const id = await completedAppointment(t);
+    const { invoiceId } = await pay(t, id, {
+      tips: [
+        { amountCents: 700, staffId: t.member },
+        { amountCents: 300, staffId: t.member },
+      ],
+      payments: [{ method: "cash", amountCents: 13_000 }],
+    });
+    const receipt = await billing.getReceipt(t.ctx, invoiceId);
+    expect(receipt.tipCents).toBe(1_000);
+    expect(receipt.tips.map((x) => x.amountCents)).toEqual([700, 300]);
+  });
+
+  it("requires the payments to cover services plus every tip, under or over", async () => {
+    const t = await newTenant("tip-total");
+    const id = await completedAppointment(t);
+    const tips = [{ amountCents: 500, staffId: t.member }, { amountCents: 250, staffId: t.member }];
+    await expect(pay(t, id, { tips, payments: [{ method: "cash", amountCents: 12_500 }] })).rejects.toMatchObject({
+      code: "VALIDATION",
+      fieldErrors: { payments: [expect.stringContaining("bill is $127.50")] },
+    });
+    await expect(pay(t, id, { tips, payments: [{ method: "cash", amountCents: 13_000 }] })).rejects.toMatchObject({ code: "VALIDATION", fieldErrors: { payments: [expect.stringContaining("over")] } });
+    expect(await db.select().from(tables.invoices).where(eq(tables.invoices.tenantId, t.id))).toHaveLength(0);
+    expect(await db.select().from(tables.invoiceTips).where(eq(tables.invoiceTips.tenantId, t.id))).toHaveLength(0);
+  });
+
+  it("is optional: no tips means a zero tip and an empty breakdown", async () => {
+    const t = await newTenant("tip-none");
+    const id = await completedAppointment(t);
+    const { invoiceId } = await pay(t, id);
+    expect(await billing.getReceipt(t.ctx, invoiceId)).toMatchObject({ tipCents: 0, tips: [] });
+    const parsed = billingSchema.recordPaymentInputSchema.parse({ appointmentId: id, lines: [{ kind: "custom", name: "x", priceCents: 100 }], payments: [{ method: "cash", amountCents: 100 }] });
+    expect(parsed.tips).toEqual([]);
+  });
+
+  it("only credits an active team member at the appointment's branch in this tenant", async () => {
+    const t = await newTenant("tip-who");
+    const other = await newTenant("tip-who-other");
+    const [second] = await db.insert(tables.branches).values({ tenantId: t.id, name: "Second", addressLine: "2 Side St" }).returning();
+    const away = (await staff.createStaff(t.ctx, staffSchema.staffInputSchema.parse({ name: "Away Alex", branchId: second!.id }))).id;
+    const retired = (await staff.createStaff(t.ctx, staffSchema.staffInputSchema.parse({ name: "Retired Rita", branchId: t.branchId }))).id;
+    await staff.setStatus(t.ctx, retired, "inactive");
+    const id = await completedAppointment(t);
+
+    for (const staffId of [away, retired, other.member, "7d3c9f62-1d0a-4e1b-9a55-2b6f0c1e0a02"]) {
+      // One bad recipient anywhere in the list rejects the whole bill.
+      await expect(
+        pay(t, id, { tips: [{ amountCents: 500, staffId: t.member }, { amountCents: 500, staffId }], payments: [{ method: "cash", amountCents: 13_000 }] }),
+      ).rejects.toMatchObject({ code: "VALIDATION", fieldErrors: { tips: expect.any(Array) } });
+    }
+    expect(await db.select().from(tables.invoices).where(eq(tables.invoices.tenantId, t.id))).toHaveLength(0);
+    expect((await billing.getCheckout(t.ctx, id)).staff.map((s) => s.name)).toEqual(["Sam Stylist"]);
+  });
+
+  it("keeps the staff name on the receipt after the team member is renamed or removed", async () => {
+    const t = await newTenant("tip-snapshot");
+    const id = await completedAppointment(t);
+    const { invoiceId } = await pay(t, id, { tips: [{ amountCents: 400, staffId: t.member }], payments: [{ method: "cash", amountCents: 12_400 }] });
+    await db.update(tables.staff).set({ name: "Renamed" }).where(eq(tables.staff.id, t.member));
+    expect((await billing.getReceipt(t.ctx, invoiceId)).tips[0]).toMatchObject({ staffName: "Sam Stylist", amountCents: 400 });
+    await db.delete(tables.staff).where(eq(tables.staff.id, t.member));
+    expect((await billing.getReceipt(t.ctx, invoiceId)).tips[0]).toMatchObject({ staffName: "Sam Stylist", amountCents: 400 });
+  });
+
+  it("still reads an invoice that only has the legacy single-tip fields", async () => {
+    const t = await newTenant("tip-legacy");
+    const [invoice] = await db
+      .insert(tables.invoices)
+      .values({ tenantId: t.id, branchId: t.branchId, receiptNumber: "NX-2026-09999", currency: "USD", subtotalCents: 5_000, tipCents: 800, tipStaffId: t.member, tipStaffName: "Old Name", totalCents: 5_800 })
+      .returning();
+    await db.insert(tables.payments).values({ tenantId: t.id, branchId: t.branchId, invoiceId: invoice!.id, amountCents: 5_800, method: "cash" });
+    const receipt = await billing.getReceipt(t.ctx, invoice!.id);
+    expect(receipt).toMatchObject({ tipCents: 800, totalCents: 5_800 });
+    expect(receipt.tips).toEqual([{ id: expect.any(String), staffName: "Old Name", amountCents: 800 }]);
+  });
+
+  it("validates the submitted tips", () => {
+    const parse = (tips: unknown) =>
+      billingSchema.recordPaymentInputSchema.safeParse({
+        appointmentId: "7d3c9f62-1d0a-4e1b-9a55-2b6f0c1e0a01",
+        lines: [{ kind: "custom", name: "x", priceCents: 100 }],
+        payments: [{ method: "cash", amountCents: 100 }],
+        tips,
+      }).success;
+    const staffId = "7d3c9f62-1d0a-4e1b-9a55-2b6f0c1e0a02";
+    expect(parse(undefined)).toBe(true);
+    expect(parse([])).toBe(true);
+    expect(parse([{ amountCents: 100, staffId }, { amountCents: 200, staffId }])).toBe(true);
+    expect(parse([{ amountCents: 0, staffId }])).toBe(false);
+    expect(parse([{ amountCents: -5, staffId }])).toBe(false);
+    expect(parse([{ amountCents: 1.5, staffId }])).toBe(false);
+    expect(parse([{ amountCents: billingSchema.MAX_LINE_CENTS + 1, staffId }])).toBe(false);
+    expect(parse([{ amountCents: 100 }])).toBe(false);
+    expect(parse([{ amountCents: 100, staffId: "nope" }])).toBe(false);
+    expect(parse({ amountCents: 100, staffId })).toBe(false);
+    expect(parse(Array.from({ length: billingSchema.MAX_TIP_ROWS + 1 }, () => ({ amountCents: 1, staffId })))).toBe(false);
+  });
+});
+
+describe("billing history", () => {
+  it("lists the customer on each payment, and 'no customer' for a walk-in bill", async () => {
+    const t = await newTenant("history-customer");
+    await pay(t, await completedAppointment(t));
+    const walkIn = await book(t, { type: "walk_in", customerId: "", date: "", time: "" });
+    for (const status of ["checked_in", "in_service", "completed"] as const) await appts.changeStatus(t.ctx, { id: walkIn.id, status });
+    await pay(t, walkIn.id);
+
+    const { recent } = await billing.getOverview(t.id);
+    expect(recent.map((p) => p.customerName).sort()).toEqual(["Cara Customer", null]);
+  });
+
+  it("filters the history by branch, within the tenant", async () => {
+    const t = await newTenant("history-branch");
+    const other = await newTenant("history-branch-other");
+    const branchesService = await import("@/server/branches/service");
+    const second = await branchesService.createBranch(t.ctx, { name: "Second", addressLine: "2 Side St", status: "active", serviceIds: [t.haircut] });
+    const member = (await staff.createStaff(t.ctx, staffSchema.staffInputSchema.parse({ name: "Second Sam", branchId: second.id }))).id;
+
+    await pay(t, await completedAppointment(t));
+    const there = await completedAppointment(t, { branchId: second.id, staffId: member, serviceId: t.haircut, time: "15:00" });
+    await pay(t, there, { lines: [{ kind: "catalog", serviceId: t.haircut }], payments: [{ method: "cash", amountCents: 4_000 }] });
+    await pay(other, await completedAppointment(other));
+
+    const names = (view: Awaited<ReturnType<typeof billing.getOverview>>) => view.recent.map((p) => p.branchId).sort();
+    const all = await billing.getOverview(t.id);
+    expect(names(all)).toEqual([t.branchId, second.id].sort());
+    expect(all.branches.map((b) => b.id).sort()).toEqual([t.branchId, second.id].sort());
+
+    const filtered = await billing.getOverview(t.id, new Date(), { branchId: second.id });
+    expect(filtered.recent.map((p) => [p.branchId, p.amountCents])).toEqual([[second.id, 4_000]]);
+    expect(filtered.filters).toEqual({ branchId: second.id });
+    // Another tenant's branch id never leaks that tenant's payments.
+    expect((await billing.getOverview(t.id, new Date(), { branchId: other.branchId })).recent).toEqual([]);
+  });
+
+  it("parses the branch filter leniently", () => {
+    expect(billingSchema.parseBillingFilters({ branchId: "7d3c9f62-1d0a-4e1b-9a55-2b6f0c1e0a01" })).toEqual({ branchId: "7d3c9f62-1d0a-4e1b-9a55-2b6f0c1e0a01" });
+    expect(billingSchema.parseBillingFilters({ branchId: "nope" })).toEqual({ branchId: undefined });
+    expect(billingSchema.parseBillingFilters({})).toEqual({ branchId: undefined });
+  });
+});
+
+describe("deleting an appointment keeps billing history", () => {
+  it("leaves the invoice, lines and payments in place, just unlinked from the appointment", async () => {
+    const t = await newTenant("delete-paid");
+    const id = await completedAppointment(t);
+    const { invoiceId } = await pay(t, id);
+
+    await appts.deleteAppointment(t.ctx, id);
+
+    const [invoice] = await db.select().from(tables.invoices).where(eq(tables.invoices.id, invoiceId));
+    expect(invoice).toMatchObject({ appointmentId: null, customerName: "Cara Customer", totalCents: 12_000 });
+    expect(await db.select().from(tables.invoiceLines).where(eq(tables.invoiceLines.invoiceId, invoiceId))).toHaveLength(2);
+    const ledger = await db.select().from(tables.payments).where(eq(tables.payments.invoiceId, invoiceId));
+    expect(ledger.map((p) => [p.amountCents, p.appointmentId])).toEqual([[12_000, null]]);
+    expect((await billing.getReceipt(t.ctx, invoiceId)).totalCents).toBe(12_000);
+    expect((await billing.getOverview(t.id)).recent).toHaveLength(1);
   });
 });

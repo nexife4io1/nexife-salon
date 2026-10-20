@@ -7,8 +7,15 @@ import { Field, Input, Select } from "@/components/ui/field";
 import { Icon, type IconName } from "@/components/ui/icon";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
-import { bookAppointmentAction } from "@/server/appointments/actions";
-import { APPOINTMENT_TYPES, APPOINTMENT_TYPE_LABELS, MAX_SERVICES_PER_APPOINTMENT, type AppointmentType, type BookingOptions } from "@/server/appointments/schema";
+import { bookAppointmentAction, updateAppointmentAction } from "@/server/appointments/actions";
+import {
+  APPOINTMENT_TYPES,
+  APPOINTMENT_TYPE_LABELS,
+  MAX_SERVICES_PER_APPOINTMENT,
+  type AppointmentType,
+  type BookingOptions,
+  type EditableAppointment,
+} from "@/server/appointments/schema";
 
 export type BookingPrefill = { branchId?: string; staffId?: string; date?: string; customerId?: string };
 
@@ -37,28 +44,36 @@ function addMinutes(time: string, minutes: number): string {
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
-export function BookingForm({ options, prefill = {} }: { options: BookingOptions; prefill?: BookingPrefill }) {
+/** New booking, or (with `editing`) the same form pre-filled to edit / reschedule an existing one. */
+export function BookingForm({ options, prefill = {}, editing }: { options: BookingOptions; prefill?: BookingPrefill; editing?: EditableAppointment }) {
   const readOnly = options.source === "demo";
-  const [state, formAction, pending] = useActionState(bookAppointmentAction, undefined);
+  const [state, formAction, pending] = useActionState(editing ? updateAppointmentAction : bookAppointmentAction, undefined);
   const feedbackRef = useRef<HTMLDivElement>(null);
   const fieldErrors = state && !state.ok ? state.error.fieldErrors : undefined;
   const formLevelError = state && !state.ok && state.error.code !== "VALIDATION" && state.error.code !== "CONFLICT" ? state.error.message : undefined;
 
-  const firstBranch = options.branches.find((b) => b.id === prefill.branchId) ?? (options.branches.length === 1 ? options.branches[0] : undefined);
+  const firstBranch =
+    options.branches.find((b) => b.id === (editing?.branchId ?? prefill.branchId)) ?? (options.branches.length === 1 ? options.branches[0] : undefined);
   const [type, setType] = useState<AppointmentType>("booking");
   const [branchId, setBranchId] = useState(firstBranch?.id ?? "");
   // One entry per service row; "" is a row that has no service chosen yet.
-  const [serviceIds, setServiceIds] = useState<string[]>([""]);
-  const [staffId, setStaffId] = useState(prefill.staffId && options.staff.some((s) => s.id === prefill.staffId && s.branchId === firstBranch?.id) ? prefill.staffId : "");
-  const [customerId, setCustomerId] = useState(prefill.customerId && options.customers.some((c) => c.id === prefill.customerId) ? prefill.customerId : "");
+  const [serviceIds, setServiceIds] = useState<string[]>(editing?.serviceIds.length ? editing.serviceIds : [""]);
+  const initialStaffId = editing ? (editing.staffId ?? undefined) : prefill.staffId;
+  const [staffId, setStaffId] = useState(initialStaffId && options.staff.some((s) => s.id === initialStaffId && s.branchId === firstBranch?.id) ? initialStaffId : "");
+  const initialCustomerId = editing ? (editing.customerId ?? undefined) : prefill.customerId;
+  const [customerId, setCustomerId] = useState(initialCustomerId && options.customers.some((c) => c.id === initialCustomerId) ? initialCustomerId : "");
   const [customerQuery, setCustomerQuery] = useState("");
-  const [date, setDate] = useState(prefill.date && prefill.date >= options.today ? prefill.date : options.today);
-  const [time, setTime] = useState("");
-  const [notes, setNotes] = useState("");
+  const [date, setDate] = useState(editing ? editing.date : prefill.date && prefill.date >= options.today ? prefill.date : options.today);
+  const [time, setTime] = useState(editing?.time ?? "");
+  const [notes, setNotes] = useState(editing?.notes ?? "");
 
+  // A team member who has declared services only takes those: it narrows both the services and the team on offer.
+  // (The server enforces the same rule when the booking is saved.)
+  const performs = (memberId: string, serviceId: string) => !options.staffServices[memberId] || options.staffServices[memberId].includes(serviceId);
   const offered = new Set(options.offeredByBranch[branchId] ?? []);
-  const services = options.services.filter((s) => offered.has(s.id));
-  const team = options.staff.filter((s) => s.branchId === branchId);
+  const services = options.services.filter((s) => offered.has(s.id) && (!staffId || performs(staffId, s.id)));
+  const chosenIds = serviceIds.filter(Boolean);
+  const team = options.staff.filter((s) => s.branchId === branchId && chosenIds.every((id) => performs(s.id, id)));
   const chosenServices = serviceIds.flatMap((id) => services.find((s) => s.id === id) ?? []);
   const totalMinutes = chosenServices.reduce((sum, s) => sum + s.durationMinutes, 0);
   const totalCents = chosenServices.reduce((sum, s) => sum + s.priceCents, 0);
@@ -76,6 +91,12 @@ export function BookingForm({ options, prefill = {} }: { options: BookingOptions
     const nextOffered = new Set(options.offeredByBranch[next] ?? []);
     setServiceIds((current) => current.map((id) => (nextOffered.has(id) ? id : "")));
     if (!options.staff.some((s) => s.id === staffId && s.branchId === next)) setStaffId("");
+  };
+
+  // Picking a team member drops any chosen service they don't perform.
+  const chooseStaff = (next: string) => {
+    setStaffId(next);
+    if (next) setServiceIds((current) => current.map((id) => (id && !performs(next, id) ? "" : id)));
   };
 
   const ctl = (name: string) => ({
@@ -99,9 +120,15 @@ export function BookingForm({ options, prefill = {} }: { options: BookingOptions
 
   return (
     <form action={formAction} noValidate className="mx-auto grid max-w-5xl grid-cols-1 gap-gutter lg:grid-cols-12">
+      {editing && (
+        <>
+          <input type="hidden" name="id" value={editing.id} />
+          <input type="hidden" name="type" value="booking" />
+        </>
+      )}
       <div className="flex flex-col gap-6 lg:col-span-8">
         <Section step={1} icon="user" title="Client & Branch Details">
-          <fieldset className="mb-6">
+          <fieldset className="mb-6" hidden={Boolean(editing)} disabled={Boolean(editing)}>
             <legend className="mb-2 text-label-md text-on-surface-variant">Booking type</legend>
             <div className="inline-flex gap-1 rounded-control bg-surface-container-low p-1">
               {APPOINTMENT_TYPES.map((t) => (
@@ -172,7 +199,7 @@ export function BookingForm({ options, prefill = {} }: { options: BookingOptions
             {!walkIn && (
               <>
                 <Field label="Appointment date" htmlFor="date" errors={fieldErrors?.date} hint={`Times are in ${options.timezone}.`}>
-                  <Input {...ctl("date")} type="date" min={options.today} value={date} onChange={(e) => setDate(e.target.value)} required />
+                  <Input {...ctl("date")} type="date" min={editing && editing.date < options.today ? editing.date : options.today} value={date} onChange={(e) => setDate(e.target.value)} required />
                 </Field>
                 <Field label="Appointment time" htmlFor="time" errors={fieldErrors?.time}>
                   <Input {...ctl("time")} type="time" step={300} value={time} onChange={(e) => setTime(e.target.value)} required />
@@ -242,7 +269,7 @@ export function BookingForm({ options, prefill = {} }: { options: BookingOptions
               </fieldset>
             </div>
             <Field label="Stylist (optional)" htmlFor="staffId" errors={fieldErrors?.staffId} hint={!staffId ? "Leave unassigned to pick someone at check-in." : undefined}>
-              <Select {...ctl("staffId")} value={staffId} onChange={(e) => setStaffId(e.target.value)} disabled={!branchId}>
+              <Select {...ctl("staffId")} value={staffId} onChange={(e) => chooseStaff(e.target.value)} disabled={!branchId}>
                 <option value="">Unassigned</option>
                 {team.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -331,10 +358,10 @@ export function BookingForm({ options, prefill = {} }: { options: BookingOptions
 
           <div className="mt-6 flex flex-col gap-3">
             <Button type="submit" fullWidth icon="calendar" disabled={pending || readOnly}>
-              {pending ? "Booking…" : walkIn ? "Add walk-in" : "Confirm booking"}
+              {pending ? (editing ? "Saving…" : "Booking…") : editing ? "Save changes" : walkIn ? "Add walk-in" : "Confirm booking"}
             </Button>
             <ButtonLink href="/appointments" variant="ghost" fullWidth>
-              Cancel
+              {editing ? "Discard changes" : "Cancel"}
             </ButtonLink>
           </div>
         </Card>

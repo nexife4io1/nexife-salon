@@ -11,9 +11,9 @@ const fieldsOf = (raw: Record<string, unknown>) => {
 
 describe("staffInputSchema", () => {
   it("accepts the minimal profile and treats blank optional fields as absent", () => {
-    const parsed = staffInputSchema.parse({ ...base, phone: "", gender: "", jobRole: "", weeklyOff: "", shiftStart: "", shiftEnd: "", monthlySalaryCents: "", joinedOn: "", yearsExperience: "", serviceIds: ["stale-service-id"] });
+    const parsed = staffInputSchema.parse({ ...base, phone: "", gender: "", jobRole: "", weeklyOff: "", shiftStart: "", shiftEnd: "", monthlySalaryCents: "", joinedOn: "", yearsExperience: "" });
     expect(parsed).toMatchObject({ status: "active", breaks: [] });
-    expect(parsed).not.toHaveProperty("serviceIds");
+    expect(parsed.serviceIds).toEqual([]);
     expect(parsed.phone).toBeUndefined();
     expect(parsed.monthlySalaryCents).toBeUndefined();
   });
@@ -112,5 +112,15 @@ describe("staffFiltersHref", () => {
   it("round-trips through parseStaffFilters", () => {
     const url = new URL(staffFiltersHref({ q: "Ana", status: "active" }), "http://x");
     expect(parseStaffFilters(Object.fromEntries(url.searchParams))).toEqual({ q: "Ana", status: "active" });
+  });
+});
+
+describe("staffInputSchema services", () => {
+  const SERVICE = "7d3c9f62-1d0a-4e1b-9a55-2b6f0c1e0a02";
+
+  it("takes a list of service ids and rejects junk or repeats", () => {
+    expect(staffInputSchema.parse({ ...base, serviceIds: [SERVICE] }).serviceIds).toEqual([SERVICE]);
+    expect(fieldsOf({ ...base, serviceIds: ["nope"] })).toContain("serviceIds.0");
+    expect(fieldsOf({ ...base, serviceIds: [SERVICE, SERVICE] })).toContain("serviceIds");
   });
 });

@@ -31,6 +31,11 @@ export function listStaff(tenantId: string) {
   return repo.listStaff(tenantId);
 }
 
+/** staff id -> service ids they perform, for staff who declared any. Staff absent from the map are unrestricted. */
+export function listServiceAssignments(tenantId: string) {
+  return repo.listServiceAssignments(tenantId);
+}
+
 // --- Staff management ------------------------------------------------------------------------------
 
 /** Profiles carry contact, salary and ID-adjacent data, so every read and write needs a staff manager. */
@@ -82,11 +87,19 @@ export async function getDirectory(ctx: TenantContext, filters: StaffFilters, no
 
 export async function getFormOptions(ctx: TenantContext): Promise<StaffFormOptions> {
   assertCanManage(ctx);
-  const [tenant, branches] = await Promise.all([
+  const [tenant, branches, services] = await Promise.all([
     tenantsService.getTenant(ctx.tenantId),
     branchOptions(ctx.tenantId),
+    tenantsService.listTenantServices(ctx.tenantId),
   ]);
-  return { branches, currency: tenant.currency, source: repo.dataSource() };
+  const offered = await Promise.all(branches.map(async (b) => [b.id, (await branchesService.getBranchServices(ctx, b.id)).offeredIds] as const));
+  return {
+    branches,
+    services: services.map((s) => ({ id: s.id, name: s.name, category: s.category, durationMinutes: s.durationMinutes, priceCents: s.priceCents })),
+    offeredByBranch: Object.fromEntries(offered),
+    currency: tenant.currency,
+    source: repo.dataSource(),
+  };
 }
 
 export async function getProfile(ctx: TenantContext, staffId: string, now = new Date()): Promise<StaffProfile> {
@@ -120,6 +133,13 @@ async function buildWrite(ctx: TenantContext, input: StaffInput, currentBranchId
     fieldErrors.branchId = ["Choose one of your branches"];
   }
 
+  // Services: active catalog services that the staff member's own branch offers.
+  if (input.serviceIds.length && !fieldErrors.branchId) {
+    const { offeredIds } = await branchesService.getBranchServices(ctx, input.branchId);
+    const allowed = new Set((await tenantsService.listTenantServices(ctx.tenantId)).filter((s) => offeredIds.includes(s.id)).map((s) => s.id));
+    if (input.serviceIds.some((id) => !allowed.has(id))) fieldErrors.serviceIds = ["Choose services this branch offers"];
+  }
+
   if (Object.keys(fieldErrors).length) throw new AppError("VALIDATION", "Please fix the highlighted fields.", fieldErrors);
 
   const weeklyOffDay = input.weeklyOff ? WEEKDAYS.indexOf(input.weeklyOff) : null;
@@ -149,6 +169,7 @@ async function buildWrite(ctx: TenantContext, input: StaffInput, currentBranchId
     recruitmentSource: input.recruitmentSource ?? null,
     weeklyOffDay,
     hours,
+    serviceIds: input.serviceIds,
     breaks: [...input.breaks].sort((a, b) => a.start.localeCompare(b.start)).map((b) => ({ label: b.label ?? null, start: b.start, end: b.end })),
   };
 }

@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/field";
 import { Icon, type IconName } from "@/components/ui/icon";
 import { centsToInputValue } from "@/lib/format";
+import { StaffServicePicker } from "./staff-service-picker";
 import type { ActionResult } from "@/server/shared/result";
 import {
   MAX_BREAKS,
@@ -85,6 +86,12 @@ export function StaffForm({ action, options, profile }: { action: StaffFormActio
     (profile?.schedule.breaks ?? []).map((b, i) => ({ key: i, label: b.label ?? "", start: b.start, end: b.end })),
   );
   const [nextKey, setNextKey] = useState(breaks.length);
+  const [branchId, setBranchId] = useState(text("branchId", profile?.branchId));
+  const [serviceIds, setServiceIds] = useState<string[]>(submitted?.serviceIds ?? profile?.serviceIds ?? []);
+  // Only services the chosen branch offers can be assigned; switching branch drops the rest.
+  const offered = new Set(options.offeredByBranch[branchId] ?? []);
+  const branchServices = options.services.filter((s) => offered.has(s.id));
+  const chosenServiceIds = serviceIds.filter((id) => offered.has(id));
 
   // Sort branches so inactive ones are only offered when they are the current assignment.
   const branches = options.branches.filter((b) => b.status !== "inactive" || b.id === profile?.branchId);
@@ -157,7 +164,7 @@ export function StaffForm({ action, options, profile }: { action: StaffFormActio
         <Section icon="building" title="Employment Details">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Field label="Branch" htmlFor="branchId" errors={fieldErrors?.branchId}>
-              <Select {...ctl("branchId")} defaultValue={text("branchId", profile?.branchId)} required>
+              <Select {...ctl("branchId")} value={branchId} onChange={(e) => setBranchId(e.target.value)} required>
                 <option value="" disabled>
                   Select branch
                 </option>
@@ -322,6 +329,27 @@ export function StaffForm({ action, options, profile }: { action: StaffFormActio
               </Button>
             )}
           </fieldset>
+        </Section>
+
+        <Section
+          icon="scissors"
+          title="Services"
+          description="Services this person performs, from their branch's offering. Leave empty to allow any service the branch offers."
+        >
+          <StaffServicePicker
+            options={branchServices}
+            value={chosenServiceIds}
+            onChange={setServiceIds}
+            currency={options.currency}
+            disabled={readOnly}
+            invalid={Boolean(fieldErrors?.serviceIds)}
+            describedBy={fieldErrors?.serviceIds ? "serviceIds-error" : undefined}
+          />
+          {fieldErrors?.serviceIds && (
+            <p role="alert" id="serviceIds-error" className="mt-2 text-label-sm text-error">
+              {fieldErrors.serviceIds[0]}
+            </p>
+          )}
         </Section>
       </div>
 

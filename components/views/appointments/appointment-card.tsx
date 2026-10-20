@@ -2,7 +2,14 @@ import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
-import { APPOINTMENT_STATUS_LABELS, APPOINTMENT_TYPE_LABELS, type Appointment, type AppointmentStatus } from "@/server/appointments/schema";
+import {
+  APPOINTMENT_STATUS_LABELS,
+  APPOINTMENT_TYPE_LABELS,
+  canEditAppointment,
+  canMarkNoShow,
+  type Appointment,
+  type AppointmentStatus,
+} from "@/server/appointments/schema";
 import { AppointmentActions } from "./appointment-actions";
 import { formatClock } from "./format";
 
@@ -34,8 +41,11 @@ export function AppointmentCard({
   branchName,
   billing,
   readOnly,
+  now,
 }: {
   appointment: Appointment;
+  /** When the board was built; decides whether the start time has passed (No-show). */
+  now: Date;
   timezone: string;
   currency: string;
   /** Shown when the board spans several branches. */
@@ -100,7 +110,17 @@ export function AppointmentCard({
           ) : null}
         </div>
       )}
-      {!readOnly && <AppointmentActions id={a.id} status={a.status} who={who} checkoutHref={billing?.canCheckout && !billing.receiptId ? `/billing/checkout/${a.id}` : undefined} />}
+      {!readOnly && (
+        <AppointmentActions
+          id={a.id}
+          status={a.status}
+          type={a.type}
+          who={who}
+          canNoShow={canMarkNoShow(a, now)}
+          canEdit={canEditAppointment(a)}
+          checkoutHref={billing?.canCheckout && !billing.receiptId ? `/billing/checkout/${a.id}` : undefined}
+        />
+      )}
     </article>
   );
 }
