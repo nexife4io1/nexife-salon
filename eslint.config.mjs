@@ -96,5 +96,13 @@ export default defineConfig([
     },
   },
 
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "Materials/**", "db/migrations/**"]),
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    "Materials/**",
+    "db/migrations/**",
+    "attendance-mobile/**",
+  ]),
 ]);
