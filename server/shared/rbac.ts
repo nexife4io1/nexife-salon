@@ -14,6 +14,7 @@ export const MENU_KEYS = [
   "appointments",
   "customers",
   "staff",
+  "attendance",
   "billing",
   "inventory",
   "finance",
@@ -26,8 +27,8 @@ export type MenuKey = (typeof MENU_KEYS)[number];
 
 const ROLE_DEFAULT_MENUS: Record<Role, readonly MenuKey[]> = {
   platform_admin: ["platform", "platform_services"],
-  owner: ["dashboard", "branches", "appointments", "customers", "staff", "billing", "inventory", "finance", "assistant", "users"],
-  manager: ["dashboard", "branches", "appointments", "customers", "staff", "billing", "inventory", "assistant"],
+  owner: ["dashboard", "branches", "appointments", "customers", "staff", "attendance", "billing", "inventory", "finance", "assistant", "users"],
+  manager: ["dashboard", "branches", "appointments", "customers", "staff", "attendance", "billing", "inventory", "assistant"],
   staff: ["dashboard", "appointments", "customers", "assistant"],
 };
 

@@ -73,6 +73,7 @@ export type StaffProfileRow = StaffDirectoryRow & {
 
 /** Postgres `time` comes back as "HH:MM:SS"; the app works in "HH:MM". */
 const hhmm = (t: string) => t.slice(0, 5);
+const currentStatus = (status: "active" | "on_leave" | "inactive"): StaffStatus => (status === "on_leave" ? "active" : status);
 
 const directoryColumns = {
   id: staff.id,
@@ -127,7 +128,7 @@ export async function listDirectory(tenantId: string, filters: StaffFilters): Pr
       .where(and(...conditions))
       .orderBy(asc(staff.name), asc(staff.id));
     const schedules = await loadSchedules(tx, tenantId, rows);
-    return rows.map(({ weeklyOffDay: _weeklyOffDay, ...row }) => ({ ...row, schedule: schedules.get(row.id)! }));
+    return rows.map(({ weeklyOffDay: _weeklyOffDay, ...row }) => ({ ...row, status: currentStatus(row.status), schedule: schedules.get(row.id)! }));
   });
 }
 
@@ -155,7 +156,7 @@ export async function findProfile(tenantId: string, staffId: string): Promise<St
 
     const schedules = await loadSchedules(tx, tenantId, [row]);
     const { weeklyOffDay: _weeklyOffDay, ...rest } = row;
-    return { ...rest, schedule: schedules.get(row.id)! };
+    return { ...rest, status: currentStatus(row.status), schedule: schedules.get(row.id)! };
   });
 }
 

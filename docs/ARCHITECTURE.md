@@ -73,6 +73,13 @@ The fixtures are not a store: nothing mutates them. This replaces the POC's
   **TODO (step 1):** connect the app as a non-owner `salon_app` role, because table owners
   bypass RLS. The migration file has the exact SQL.
 
+## Attendance, shifts & leave
+
+- Attendance is a separate domain at `server/attendance/`. Managers record one attendance entry per scheduled staff shift and work date; staff do not need individual login accounts.
+- `staff_working_hours` stores recurring weekly shift slots and allows multiple non-overlapping shifts on one weekday. Attendance stores the scheduled shift snapshot, actual clock-in/out times and the recording user.
+- Leave is a dated interval. It affects only dates in that interval; a recorded shift attendance takes precedence as **Present**, otherwise a scheduled shift is **Leave** or **Unmarked**. A leave status is never persisted as an indefinite staff employment status.
+- Attendance, recurring schedules and leave are tenant-scoped and accessed only through the attendance repository under `withTenant()`. Attendance management is restricted to owners and managers.
+
 ## Auth
 
 - The POC's session philosophy is kept: a stateless **HMAC-SHA256 signed cookie**

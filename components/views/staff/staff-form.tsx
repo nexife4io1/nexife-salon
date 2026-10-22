@@ -208,7 +208,7 @@ export function StaffForm({ action, options, profile }: { action: StaffFormActio
               <Input {...ctl("casualLeaves")} type="number" min={0} defaultValue={text("casualLeaves", profile?.casualLeaves)} placeholder="Enter casual leave allowance" />
             </Field>
             {editing && (
-              <Field label="Status" htmlFor="status" hint="On leave and inactive staff are not shown as available." errors={fieldErrors?.status}>
+              <Field label="Status" htmlFor="status" hint="Inactive staff are not shown as available. Record dated leave from Attendance." errors={fieldErrors?.status}>
                 <Select {...ctl("status")} defaultValue={text("status", profile?.status)}>
                   {STAFF_STATUSES.map((s) => (
                     <option key={s} value={s}>

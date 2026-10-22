@@ -1,7 +1,7 @@
 import { boolean, check, date, index, integer, smallint, text, time, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { id, salon, timestamps } from "./_shared";
-import { branches, tenants } from "./tenancy";
+import { branches, tenants, users } from "./tenancy";
 
 /**
  * Day-to-day salon operations: staff, the service catalog, customers and
@@ -87,7 +87,7 @@ export const staffServices = salon.table(
   (t) => [uniqueIndex("staff_services_staff_service_uq").on(t.staffId, t.serviceId), index("staff_services_tenant_idx").on(t.tenantId)],
 );
 
-/** One shift per working weekday. A weekday with no row is a day off / not scheduled. */
+/** Recurring shift slots. Multiple shifts may be scheduled on one weekday. */
 export const staffWorkingHours = salon.table(
   "staff_working_hours",
   {
@@ -104,10 +104,62 @@ export const staffWorkingHours = salon.table(
     ...timestamps(),
   },
   (t) => [
-    uniqueIndex("staff_working_hours_staff_day_uq").on(t.staffId, t.dayOfWeek),
+    uniqueIndex("staff_working_hours_staff_day_start_uq").on(t.tenantId, t.staffId, t.dayOfWeek, t.startTime),
     index("staff_working_hours_tenant_idx").on(t.tenantId),
     check("staff_working_hours_day_chk", sql`${t.dayOfWeek} between 0 and 6`),
     check("staff_working_hours_order_chk", sql`${t.endTime} > ${t.startTime}`),
+  ],
+);
+
+/** One manager-recorded attendance entry per scheduled staff shift and calendar date. */
+export const staffAttendance = salon.table(
+  "staff_attendance",
+  {
+    id: id(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    staffId: uuid("staff_id")
+      .notNull()
+      .references(() => staff.id, { onDelete: "cascade" }),
+    shiftId: uuid("shift_id").references(() => staffWorkingHours.id, { onDelete: "set null" }),
+    workDate: date("work_date", { mode: "string" }).notNull(),
+    shiftStart: time("shift_start", { precision: 0 }).notNull(),
+    shiftEnd: time("shift_end", { precision: 0 }).notNull(),
+    clockIn: time("clock_in", { precision: 0 }).notNull(),
+    clockOut: time("clock_out", { precision: 0 }),
+    note: text("note"),
+    recordedBy: uuid("recorded_by").references(() => users.id, { onDelete: "set null" }),
+    ...timestamps(),
+  },
+  (t) => [
+    uniqueIndex("staff_attendance_tenant_staff_date_start_uq").on(t.tenantId, t.staffId, t.workDate, t.shiftStart),
+    index("staff_attendance_tenant_date_idx").on(t.tenantId, t.workDate),
+    check("staff_attendance_shift_order_chk", sql`${t.shiftEnd} > ${t.shiftStart}`),
+    check("staff_attendance_clock_order_chk", sql`${t.clockOut} is null or ${t.clockOut} >= ${t.clockIn}`),
+  ],
+);
+
+/** Dated leave applies only within its range; an attendance entry takes precedence for that shift. */
+export const staffLeaves = salon.table(
+  "staff_leaves",
+  {
+    id: id(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    staffId: uuid("staff_id")
+      .notNull()
+      .references(() => staff.id, { onDelete: "cascade" }),
+    fromDate: date("from_date", { mode: "string" }).notNull(),
+    toDate: date("to_date", { mode: "string" }).notNull(),
+    reason: text("reason"),
+    recordedBy: uuid("recorded_by").references(() => users.id, { onDelete: "set null" }),
+    ...timestamps(),
+  },
+  (t) => [
+    index("staff_leaves_tenant_staff_range_idx").on(t.tenantId, t.staffId, t.fromDate, t.toDate),
+    check("staff_leaves_date_order_chk", sql`${t.toDate} >= ${t.fromDate}`),
   ],
 );
 

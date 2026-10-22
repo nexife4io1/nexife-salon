@@ -1,8 +1,8 @@
 import type { Availability, StaffSchedule, StaffStatus } from "./schema";
 
 /**
- * Availability is derived at read time from persisted status + schedule. It is never stored,
- * and it never invents leave: "on leave" only appears when a manager set that status.
+ * Availability is derived at read time from persisted employment status + schedule.
+ * Dated leave is managed separately by the attendance domain.
  */
 
 const WEEKDAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
@@ -25,21 +25,24 @@ const toMinutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 
 
 export function computeAvailability(member: { status: StaffStatus; schedule: StaffSchedule }, at: Date, timeZone: string): Availability {
   if (member.status === "inactive") return { state: "inactive", label: "Inactive" };
-  if (member.status === "on_leave") return { state: "on_leave", label: "On leave" };
-
   const { weeklyOffDay, hours, breaks } = member.schedule;
   const { day, minutes } = localDayAndMinutes(at, timeZone);
 
   if (weeklyOffDay === day) return { state: "day_off", label: "Weekly off today" };
   if (!hours.length) return { state: "unscheduled", label: "Schedule not set" };
 
-  const today = hours.find((h) => h.day === day);
-  if (!today) return { state: "day_off", label: "Not scheduled today" };
+  const today = hours.filter((h) => h.day === day).sort((a, b) => a.start.localeCompare(b.start));
+  if (!today.length) return { state: "day_off", label: "Not scheduled today" };
 
-  if (minutes < toMinutes(today.start)) return { state: "off_shift", label: `Starts at ${today.start}` };
-  if (minutes >= toMinutes(today.end)) return { state: "off_shift", label: `Finished at ${today.end}` };
+  const currentShift = today.find((shift) => minutes >= toMinutes(shift.start) && minutes < toMinutes(shift.end));
+  if (!currentShift) {
+    const next = today.find((shift) => minutes < toMinutes(shift.start));
+    return next
+      ? { state: "off_shift", label: `Starts at ${next.start}` }
+      : { state: "off_shift", label: `Finished at ${today[today.length - 1]!.end}` };
+  }
 
-  const current = breaks.find((b) => minutes >= toMinutes(b.start) && minutes < toMinutes(b.end));
-  if (current) return { state: "on_break", label: `On break until ${current.end}` };
-  return { state: "available", label: `Available until ${today.end}` };
+  const currentBreak = breaks.find((b) => minutes >= toMinutes(b.start) && minutes < toMinutes(b.end));
+  if (currentBreak) return { state: "on_break", label: `On break until ${currentBreak.end}` };
+  return { state: "available", label: `Available until ${currentShift.end}` };
 }

@@ -90,9 +90,9 @@ describe("staff management", () => {
     const base = { name: "Sam Lee", branchId: t.branchId, shiftStart: "10:00", shiftEnd: "19:00", breaks: [{ start: "14:00", end: "14:30" }] };
     const { id } = await staff.createStaff(ctxFor(t.id), parse(base));
 
-    await staff.updateStaff(ctxFor(t.id), id, parse({ ...base, name: "Samantha Lee", weeklyOff: "monday", shiftStart: "08:00", breaks: [], status: "on_leave" }));
+    await staff.updateStaff(ctxFor(t.id), id, parse({ ...base, name: "Samantha Lee", weeklyOff: "monday", shiftStart: "08:00", breaks: [], status: "active" }));
     const p = await staff.getProfile(ctxFor(t.id), id);
-    expect(p).toMatchObject({ name: "Samantha Lee", initials: "SL", status: "on_leave", active: true });
+    expect(p).toMatchObject({ name: "Samantha Lee", initials: "SL", status: "active", active: true });
     expect(p.schedule.breaks).toEqual([]);
     expect(p.schedule.hours.find((h) => h.day === 1)).toBeUndefined();
     expect(p.schedule.hours[0]!.start).toBe("08:00");
@@ -112,8 +112,12 @@ describe("staff management", () => {
     expect(await at("2026-10-14T14:00:00Z")).toMatchObject({ state: "off_shift" }); // 19:30 local
     expect(await at("2026-10-18T05:00:00Z")).toMatchObject({ state: "day_off" }); // Sunday
 
-    await staff.setStatus(ctxFor(t.id), id, "on_leave");
-    expect(await at("2026-10-14T05:00:00Z")).toMatchObject({ state: "on_leave" });
+    await db.update(tables.staff).set({ status: "on_leave" }).where(eq(tables.staff.id, id));
+    expect(await staff.getProfile(ctxFor(t.id), id, new Date("2026-10-14T05:00:00Z"))).toMatchObject({
+      status: "active",
+      availability: { state: "available" },
+    });
+    expect(await at("2026-10-14T05:00:00Z")).toMatchObject({ state: "available" });
     await staff.setStatus(ctxFor(t.id), id, "inactive");
     expect(await at("2026-10-14T05:00:00Z")).toMatchObject({ state: "inactive" });
   });
@@ -134,7 +138,7 @@ describe("staff management", () => {
     expect((await branches.getOverview(t.id)).branches[0]!.staffCount).toBe(1);
     expect((await staff.listStaff(t.id)).find((s) => s.id === a.id)).toMatchObject({ active: false });
 
-    await staff.setStatus(ctxFor(t.id), a.id, "on_leave"); // still employed, still counted
+    await staff.setStatus(ctxFor(t.id), a.id, "active"); // still employed, still counted
     expect((await branches.getOverview(t.id)).branches[0]!.staffCount).toBe(2);
   });
 
@@ -143,7 +147,7 @@ describe("staff management", () => {
     const other = await branches.createBranch(ctxFor(t.id), { name: "Second", addressLine: "2 Side St", status: "active", serviceIds: [] });
     await staff.createStaff(ctxFor(t.id), parse({ name: "Olivia Bennett", title: "Lead Colorist", branchId: t.branchId }));
     const marcus = await staff.createStaff(ctxFor(t.id), parse({ name: "Marcus Reed", title: "Barber", branchId: other.id }));
-    await staff.setStatus(ctxFor(t.id), marcus.id, "on_leave");
+    await staff.setStatus(ctxFor(t.id), marcus.id, "inactive");
 
     const names = async (f: import("@/server/staff/schema").StaffFilters) => (await staff.getDirectory(ctxFor(t.id), f)).staff.map((s) => s.name);
     expect(await names({})).toEqual(["Marcus Reed", "Olivia Bennett"]);
@@ -151,7 +155,7 @@ describe("staff management", () => {
     expect(await names({ q: "colorist" })).toEqual(["Olivia Bennett"]);
     expect(await names({ q: "100%" })).toEqual([]); // LIKE wildcards are escaped
     expect(await names({ branchId: other.id })).toEqual(["Marcus Reed"]);
-    expect(await names({ status: "on_leave" })).toEqual(["Marcus Reed"]);
+    expect(await names({ status: "inactive" })).toEqual(["Marcus Reed"]);
     expect(await names({ status: "active", branchId: other.id })).toEqual([]);
   });
 

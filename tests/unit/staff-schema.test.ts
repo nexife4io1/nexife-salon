@@ -54,7 +54,7 @@ describe("staffInputSchema", () => {
 
 describe("parseStaffFilters", () => {
   it("keeps valid params and drops invalid ones instead of failing", () => {
-    expect(parseStaffFilters({ q: " ola ", status: "on_leave", branchId: BRANCH })).toEqual({ q: "ola", status: "on_leave", branchId: BRANCH });
+    expect(parseStaffFilters({ q: " ola ", status: "inactive", branchId: BRANCH })).toEqual({ q: "ola", status: "inactive", branchId: BRANCH });
     expect(parseStaffFilters({ q: "", status: "retired", branchId: "nope" })).toEqual({ q: undefined, status: undefined, branchId: undefined });
     expect(parseStaffFilters({ status: ["inactive", "active"] }).status).toBe("inactive");
   });
@@ -82,11 +82,13 @@ describe("computeAvailability", () => {
     expect(state("18:00")).toBe("off_shift");
   });
 
-  it("lets status override the schedule and never invents availability", () => {
-    expect(computeAvailability({ status: "on_leave", schedule }, wed("10:00"), "UTC").state).toBe("on_leave");
+  it("lets inactive status override the schedule and treats multiple shifts independently", () => {
     expect(computeAvailability({ status: "inactive", schedule }, wed("10:00"), "UTC").state).toBe("inactive");
     expect(computeAvailability({ status: "active", schedule: { weeklyOffDay: null, hours: [], breaks: [] } }, wed("10:00"), "UTC").state).toBe("unscheduled");
     expect(computeAvailability({ status: "active", schedule: { ...schedule, weeklyOffDay: 3 } }, wed("10:00"), "UTC").state).toBe("day_off");
+    const splitShift = { weeklyOffDay: null, hours: [{ day: 3, start: "09:00", end: "12:00" }, { day: 3, start: "15:00", end: "18:00" }], breaks: [] };
+    expect(computeAvailability({ status: "active", schedule: splitShift }, wed("13:00"), "UTC")).toMatchObject({ state: "off_shift", label: "Starts at 15:00" });
+    expect(computeAvailability({ status: "active", schedule: splitShift }, wed("16:00"), "UTC").state).toBe("available");
   });
 });
 
@@ -106,7 +108,7 @@ describe("staffFiltersHref", () => {
   it("builds the directory URL used by the auto-applying filters", () => {
     expect(staffFiltersHref({})).toBe("/staff");
     expect(staffFiltersHref({ q: "  ", branchId: "", status: undefined })).toBe("/staff");
-    expect(staffFiltersHref({ q: " Ana ", branchId: BRANCH, status: "on_leave" })).toBe(`/staff?q=Ana&branchId=${BRANCH}&status=on_leave`);
+    expect(staffFiltersHref({ q: " Ana ", branchId: BRANCH, status: "inactive" })).toBe(`/staff?q=Ana&branchId=${BRANCH}&status=inactive`);
   });
 
   it("round-trips through parseStaffFilters", () => {

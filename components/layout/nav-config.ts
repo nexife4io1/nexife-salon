@@ -20,6 +20,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "customers", label: "Customers", href: "/customers", icon: "users", group: "operate" },
   { key: "billing", label: "Billing", href: "/billing", icon: "receipt", group: "operate" },
   { key: "staff", label: "Staff", href: "/staff", icon: "scissors", group: "manage" },
+  { key: "attendance", label: "Attendance", href: "/attendance", icon: "clock", group: "manage" },
   { key: "branches", label: "Branches", href: "/branches", icon: "store", group: "manage" },
   { key: "inventory", label: "Inventory", href: "/inventory", icon: "package", group: "manage" },
   { key: "finance", label: "Finance", href: "/finance", icon: "chart", group: "manage" },

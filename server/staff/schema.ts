@@ -3,10 +3,10 @@ import { parseMoneyToCents } from "@/lib/format";
 
 // --- Vocabulary (keep in sync with the enums in db/schema/operations.ts) ---------------------------
 
-export const STAFF_STATUSES = ["active", "on_leave", "inactive"] as const;
+export const STAFF_STATUSES = ["active", "inactive"] as const;
 export const staffStatusSchema = z.enum(STAFF_STATUSES);
 export type StaffStatus = z.infer<typeof staffStatusSchema>;
-export const STAFF_STATUS_LABELS: Record<StaffStatus, string> = { active: "Active", on_leave: "On leave", inactive: "Inactive" };
+export const STAFF_STATUS_LABELS: Record<StaffStatus, string> = { active: "Active", inactive: "Inactive" };
 
 export const STAFF_JOB_ROLES = ["hair_stylist", "beauty_therapist", "salon_assistant", "manager"] as const;
 export const staffJobRoleSchema = z.enum(STAFF_JOB_ROLES);
@@ -50,7 +50,7 @@ export type WorkingHours = { day: number; start: ClockTime; end: ClockTime };
 export type StaffBreak = { label: string | null; start: ClockTime; end: ClockTime };
 export type StaffSchedule = { weeklyOffDay: number | null; hours: WorkingHours[]; breaks: StaffBreak[] };
 
-export type AvailabilityState = "available" | "on_break" | "off_shift" | "day_off" | "on_leave" | "inactive" | "unscheduled";
+export type AvailabilityState = "available" | "on_break" | "off_shift" | "day_off" | "inactive" | "unscheduled";
 /** Derived from persisted status + schedule at read time; never stored. */
 export type Availability = { state: AvailabilityState; label: string };
 

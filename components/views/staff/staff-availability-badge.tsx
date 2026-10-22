@@ -7,7 +7,6 @@ const TONE: Record<AvailabilityState, BadgeTone> = {
   off_shift: "neutral",
   day_off: "neutral",
   unscheduled: "neutral",
-  on_leave: "warning",
   inactive: "neutral",
 };
 
@@ -17,7 +16,6 @@ const HEADLINE: Record<AvailabilityState, string> = {
   off_shift: "Off shift",
   day_off: "Day off",
   unscheduled: "No schedule",
-  on_leave: "On leave",
   inactive: "Inactive",
 };
 
