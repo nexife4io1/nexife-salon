@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { getTenantContext } from "@/server/shared/context";
 import { AppError, validationError } from "@/server/shared/errors";
 import { ok, toActionError, type ActionResult } from "@/server/shared/result";
-import { setStaffStatusInputSchema, staffInputSchema } from "./schema";
+import { registrationCodeInputSchema, setStaffStatusInputSchema, staffInputSchema } from "./schema";
 import * as service from "./service";
 
 const FORBIDDEN = "You don't have access to manage staff.";
@@ -77,5 +77,23 @@ export async function setStaffStatusAction(_prev: ActionResult | undefined, form
   revalidatePath("/staff");
   revalidatePath(`/staff/${parsed.data.id}`);
   revalidatePath("/branches");
+  return ok(undefined);
+}
+
+/** Generate or regenerate the code a staff member uses on the mobile attendance page. */
+export async function regenerateRegistrationCodeAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {
+  const ctx = await getTenantContext("staff");
+  if (!ctx) return toActionError(new AppError("FORBIDDEN", FORBIDDEN));
+
+  const parsed = registrationCodeInputSchema.safeParse({ id: formData.get("id") });
+  if (!parsed.success) return toActionError(new AppError("NOT_FOUND", "Staff member not found."));
+
+  try {
+    await service.regenerateRegistrationCode(ctx, parsed.data.id);
+  } catch (error) {
+    return toActionError(error);
+  }
+
+  revalidatePath(`/staff/${parsed.data.id}`);
   return ok(undefined);
 }

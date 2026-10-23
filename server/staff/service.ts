@@ -7,6 +7,7 @@ import * as branchesService from "@/server/branches/service";
 import * as tenantsService from "@/server/tenants/service";
 import { computeAvailability } from "./availability";
 import * as repo from "./repository";
+import { generateRegistrationCode } from "./registration-code";
 import type { StaffProfileRow } from "./repository";
 import type {
   StaffBranchOption,
@@ -173,4 +174,33 @@ export async function setStatus(ctx: TenantContext, staffId: string, status: Sta
   assertCanManage(ctx);
   repo.assertWritable();
   if (!(await repo.setStatus(ctx.tenantId, staffId, status))) throw new AppError("NOT_FOUND", "Staff member not found.");
+}
+
+// --- Device registration ---------------------------------------------------------------------------
+
+const CODE_ATTEMPTS = 5;
+
+/** Generate (or replace) the staff member's attendance registration code and return it. */
+export async function regenerateRegistrationCode(ctx: TenantContext, staffId: string): Promise<string> {
+  assertCanManage(ctx);
+  repo.assertWritable();
+  for (let attempt = 0; attempt < CODE_ATTEMPTS; attempt++) {
+    const code = generateRegistrationCode();
+    const result = await repo.setRegistrationCode(ctx.tenantId, staffId, code);
+    if (result === "ok") return code;
+    if (result === "not_found") throw new AppError("NOT_FOUND", "Staff member not found.");
+    if (result === "no_branch") throw new AppError("VALIDATION", "Assign this staff member to a branch before generating a code.");
+    // "taken": a freak collision within the tenant; draw again.
+  }
+  throw new AppError("INTERNAL", "Could not generate a unique code. Please try again.");
+}
+
+export type DeviceStaff = { id: string; name: string; branchId: string | null; status: StaffStatus; phone: string | null };
+
+/**
+ * Backend-only lookup for the attendance domain. Callers must have authenticated the device user themselves
+ * (registration code + phone); it is not a manager read, so it does no role check.
+ */
+export function findByRegistrationCode(tenantId: string, code: string): Promise<DeviceStaff | null> {
+  return repo.findByRegistrationCode(tenantId, code);
 }

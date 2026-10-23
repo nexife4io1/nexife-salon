@@ -69,6 +69,7 @@ export type StaffProfileRow = StaffDirectoryRow & {
   joinedOn: string | null;
   casualLeaves: number | null;
   recruitmentSource: string | null;
+  registrationCode: string | null;
 };
 
 /** Postgres `time` comes back as "HH:MM:SS"; the app works in "HH:MM". */
@@ -147,6 +148,7 @@ export async function findProfile(tenantId: string, staffId: string): Promise<St
         joinedOn: staff.joinedOn,
         casualLeaves: staff.casualLeaves,
         recruitmentSource: staff.recruitmentSource,
+        registrationCode: staff.registrationCode,
       })
       .from(staff)
       .where(and(eq(staff.tenantId, tenantId), eq(staff.id, staffId)))
@@ -234,4 +236,53 @@ export async function setStatus(tenantId: string, staffId: string, status: Staff
       .returning({ id: staff.id }),
   );
   return updated.length > 0;
+}
+
+// --- Device registration ---------------------------------------------------------------------------
+
+const UNIQUE_VIOLATION = "23505";
+
+function isUniqueViolation(error: unknown): boolean {
+  const e = error as { code?: string; cause?: { code?: string } } | null;
+  return e?.code === UNIQUE_VIOLATION || e?.cause?.code === UNIQUE_VIOLATION;
+}
+
+export type SetCodeResult = "ok" | "not_found" | "no_branch" | "taken";
+
+/** Stores `code` for a staff member of this tenant that is assigned to a branch. "taken" = another staff member has it. */
+export async function setRegistrationCode(tenantId: string, staffId: string, code: string): Promise<SetCodeResult> {
+  assertWritable();
+  try {
+    return await withTenant(tenantId, async (tx) => {
+      const [row] = await tx
+        .select({ branchId: staff.branchId })
+        .from(staff)
+        .where(and(eq(staff.tenantId, tenantId), eq(staff.id, staffId)))
+        .limit(1);
+      if (!row) return "not_found" as const;
+      if (!row.branchId) return "no_branch" as const;
+      await tx
+        .update(staff)
+        .set({ registrationCode: code })
+        .where(and(eq(staff.tenantId, tenantId), eq(staff.id, staffId)));
+      return "ok" as const;
+    });
+  } catch (error) {
+    if (isUniqueViolation(error)) return "taken";
+    throw error;
+  }
+}
+
+export type DeviceStaffRow = { id: string; name: string; branchId: string | null; status: StaffStatus; phone: string | null };
+
+export async function findByRegistrationCode(tenantId: string, code: string): Promise<DeviceStaffRow | null> {
+  if (!isDatabaseConfigured()) return null;
+  return withTenant(tenantId, async (tx) => {
+    const [row] = await tx
+      .select({ id: staff.id, name: staff.name, branchId: staff.branchId, status: staff.status, phone: staff.phone })
+      .from(staff)
+      .where(and(eq(staff.tenantId, tenantId), eq(staff.registrationCode, code)))
+      .limit(1);
+    return row ?? null;
+  });
 }
