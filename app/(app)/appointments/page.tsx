@@ -12,7 +12,9 @@ export const metadata: Metadata = { title: "Appointments" };
 
 export default async function AppointmentsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const board = await getAppointmentsBoard(await searchParams);
-  const [billing, tenant] = await Promise.all([getAppointmentBillingState(board.appointments.map((a) => a.id)), getCurrentTenant()]);
+  const [billing, tenant] = await Promise.all([getAppointmentBillingState([...board.appointments, ...board.completed].map((a) => a.id)), getCurrentTenant()]);
+  // Paid appointments are done: only the ones still waiting for payment stay in view (the Completed filter lists the rest).
+  const shown = billing.canCheckout ? { ...board, completed: board.completed.filter((a) => !billing.receipts[a.id]) } : board;
   const readOnly = board.source === "demo";
   const bookParams = new URLSearchParams({ date: board.date });
   if (board.filters.branchId) bookParams.set("branchId", board.filters.branchId);
@@ -32,7 +34,7 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
         }
       />
       <AppointmentsFilterBar board={board} />
-      <AppointmentsBoard board={board} currency={tenant?.currency ?? "USD"} canCheckout={billing.canCheckout} receipts={billing.receipts} />
+      <AppointmentsBoard board={shown} currency={tenant?.currency ?? "USD"} canCheckout={billing.canCheckout} receipts={billing.receipts} />
     </>
   );
 }

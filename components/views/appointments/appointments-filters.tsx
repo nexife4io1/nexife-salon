@@ -71,7 +71,9 @@ export function AppointmentsFilterBar({ board }: { board: Pick<AppointmentBoard,
           <span className="text-label-md text-on-surface">{total === 1 ? "1 appointment" : `${total} appointments`}</span>
           <span>Waiting ({counts.checked_in})</span>
           <span>In service ({counts.in_service})</span>
-          <span>Completed ({counts.completed})</span>
+          <Link href={href({ status: "completed" })} replace className="text-primary hover:underline">
+            Completed ({counts.completed})
+          </Link>
         </div>
       </div>
 

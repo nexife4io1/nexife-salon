@@ -1,5 +1,6 @@
 import "server-only";
 import { zonedDateString, zonedDayRange, zonedTimeString, zonedTimeToUtc } from "@/lib/dates";
+import { getSessionSecret } from "@/server/shared/session-token";
 import type { TenantContext } from "@/server/shared/context";
 import { AppError } from "@/server/shared/errors";
 // Cross-domain reads go through other domains' services — never their repositories.
@@ -8,20 +9,37 @@ import * as customersService from "@/server/customers/service";
 import * as staffService from "@/server/staff/service";
 import * as tenantsService from "@/server/tenants/service";
 import * as repo from "./repository";
+import { newReviewNonce, signReviewToken, verifyReviewToken } from "./review-token";
 import {
   APPOINTMENT_STATUSES,
   APPOINTMENT_STATUS_LABELS,
+  CUSTOMER_PICKER_LIMIT,
+  MAX_SERVICES_PER_APPOINTMENT,
+  REVIEW_LINK_TTL_DAYS,
+  REASSIGN_REASON_MIN,
   UPCOMING_STATUSES,
   canEditAppointment,
+  canManageLines,
   canMarkNoShow,
+  canReassignLines,
   canTransition,
+  customerSearchQuerySchema,
+  type AddServiceLineInput,
   type AppointmentBoard,
   type AppointmentFilters,
+  type AppointmentServicesView,
   type AppointmentStatus,
   type BookAppointmentInput,
   type BookingOptions,
   type ChangeAppointmentStatusInput,
+  type ChangeServiceLineStatusInput,
+  type CustomerChoice,
   type EditableAppointment,
+  type PublicReview,
+  type ReassignServiceLineInput,
+  type ReceiptReviewLink,
+  type RemoveServiceLineInput,
+  type SubmitReviewInput,
 } from "./schema";
 
 /** A booking may start up to this long before "now" (clock skew / a form left open for a moment). */
@@ -63,12 +81,15 @@ export async function getBoard(ctx: TenantContext, filters: AppointmentFilters, 
 
   // No status chosen = what still needs attention (not the day's finished and closed appointments).
   const status = filters.status ?? "upcoming";
+  const isUpcomingView = status === "upcoming";
   return {
     date,
     today,
     now,
     timezone,
     filters: { ...filters, date },
+    // Finished work leaves the "to do" columns, but stays on this screen: the Upcoming view lists it underneath.
+    completed: isUpcomingView ? dayRows.filter((row) => row.status === "completed") : [],
     appointments:
       status === "all"
         ? dayRows
@@ -91,8 +112,11 @@ export async function getBookingOptions(ctx: TenantContext, now = new Date(), in
     tenantsService.listTenantServices(ctx.tenantId),
     staffService.listStaff(ctx.tenantId),
     staffService.listServiceAssignments(ctx.tenantId),
-    customersService.searchCustomers(ctx.tenantId, { limit: 100 }),
+    customersService.searchCustomers(ctx.tenantId, { limit: CUSTOMER_PICKER_LIMIT + 1, sort: "recent" }),
   ]);
+  // One extra row tells us whether the picker's starting list is the whole directory or just its newest part.
+  const customersTruncated = customers.length > CUSTOMER_PICKER_LIMIT;
+  customers.length = Math.min(customers.length, CUSTOMER_PICKER_LIMIT);
   // A customer arriving via ?customerId may sit beyond the first page of results; make sure they are selectable.
   if (includeCustomerId && !customers.some((c) => c.id === includeCustomerId)) {
     const profile = await customersService.getProfile(ctx.tenantId, includeCustomerId).catch(() => null);
@@ -113,8 +137,17 @@ export async function getBookingOptions(ctx: TenantContext, now = new Date(), in
     staff: staff.filter((s) => s.active && s.branchId).map((s) => ({ id: s.id, name: s.name, title: s.title, branchId: s.branchId })),
     staffServices: Object.fromEntries(assignments),
     customers: customers.map((c) => ({ id: c.id, name: c.name, phone: c.phone })),
+    customersTruncated,
     source: repo.dataSource(),
   };
+}
+
+/** Customers matching a name or phone fragment, for the booking form's picker (searches the whole directory). */
+export async function searchCustomerChoices(ctx: TenantContext, query: string): Promise<CustomerChoice[]> {
+  const q = customerSearchQuerySchema.safeParse(query);
+  if (!q.success) return [];
+  const rows = await customersService.searchCustomers(ctx.tenantId, { q: q.data, limit: CUSTOMER_PICKER_LIMIT, sort: "name" });
+  return rows.map((c) => ({ id: c.id, name: c.name, phone: c.phone }));
 }
 
 function timeRange(a: Date, b: Date, timezone: string): string {
@@ -265,7 +298,7 @@ export async function changeStatus(ctx: TenantContext, input: ChangeAppointmentS
     if (existing.type === "walk_in") throw new AppError("CONFLICT", "A walk-in can't be marked as a no-show. Cancel it instead.");
     if (!canMarkNoShow(existing, now)) throw new AppError("CONFLICT", "An appointment can only be marked as a no-show once its start time has passed.");
   }
-  if (!(await repo.transitionStatus(ctx.tenantId, input.id, existing.status, input.status))) {
+  if (!(await repo.transitionStatus(ctx.tenantId, input.id, existing.status, input.status, ctx.userId, now))) {
     throw new AppError("CONFLICT", "This appointment was just updated by someone else. Refresh to see the latest status.");
   }
 }
@@ -300,4 +333,170 @@ export function listCompleted(tenantId: string, limit = 100) {
 /** One appointment with its service snapshot lines, or null if it isn't in this tenant. */
 export function findAppointment(tenantId: string, id: string) {
   return repo.findById(tenantId, id);
+}
+
+// --- Service lines: adding, running and reassigning services during and after check-in ---------------------------
+
+const LINES_LOCKED = "Services can only be added, started or removed while the appointment is checked in or in service.";
+
+function throwLineFailure(failure: repo.LineFailure, context: { staffName?: string } = {}): never {
+  const invalid = (field: string, message: string) => new AppError("VALIDATION", message, { [field]: [message] });
+  switch (failure.reason) {
+    case "not_found":
+      throw new AppError("NOT_FOUND", "Appointment not found.");
+    case "line_not_found":
+      throw new AppError("NOT_FOUND", "That service is no longer on this appointment.");
+    case "appointment_state":
+      throw new AppError("CONFLICT", failure.status === "completed" ? "This appointment is completed. Its services can't change, but a team member can still be corrected." : LINES_LOCKED);
+    case "line_state":
+      throw new AppError("CONFLICT", "This service was just updated by someone else. Refresh to see its latest status.");
+    case "limit":
+      throw invalid("serviceId", `An appointment can have at most ${MAX_SERVICES_PER_APPOINTMENT} services.`);
+    case "duplicate":
+      throw invalid("serviceId", "That service is already on this appointment.");
+    case "last_line":
+      throw new AppError("CONFLICT", "An appointment needs at least one service. Cancel the appointment instead.");
+    case "staff_required":
+      throw invalid("staffId", "Assign a team member before starting this service.");
+    case "staff_invalid":
+      throw invalid("staffId", "Choose an active team member at this branch.");
+    case "staff_not_qualified":
+      throw invalid("staffId", `${failure.staffName ?? context.staffName ?? "That team member"} doesn't perform this service.`);
+    case "reason_required":
+      throw invalid("reason", `Say why you are changing a completed service (at least ${REASSIGN_REASON_MIN} characters).`);
+    case "unchanged":
+      throw invalid("staffId", "That team member is already on this service.");
+  }
+}
+
+/** The management screen for one appointment's services. */
+export async function getServicesView(ctx: TenantContext, appointmentId: string): Promise<AppointmentServicesView> {
+  const appointment = await repo.findById(ctx.tenantId, appointmentId);
+  if (!appointment) throw new AppError("NOT_FOUND", "Appointment not found.");
+  const [tenant, catalog, offered, team, assignments, events] = await Promise.all([
+    tenantsService.getTenant(ctx.tenantId),
+    tenantsService.listTenantServices(ctx.tenantId),
+    branchesService.getBranchServices(ctx, appointment.branchId),
+    staffService.listStaff(ctx.tenantId),
+    staffService.listServiceAssignments(ctx.tenantId),
+    repo.listLineEvents(ctx.tenantId, appointmentId),
+  ]);
+  const offeredIds = new Set(offered.offeredIds);
+  const onIt = new Set(appointment.services.flatMap((l) => (l.serviceId ? [l.serviceId] : [])));
+  const members = team.filter((s) => s.active && s.branchId === appointment.branchId);
+  return {
+    appointment,
+    timezone: tenant.timezone,
+    currency: tenant.currency,
+    events,
+    canManage: canManageLines(appointment.status),
+    canReassign: canReassignLines(appointment.status),
+    team: members.map((s) => ({ id: s.id, name: s.name, title: s.title })),
+    teamServices: Object.fromEntries([...assignments].filter(([staffId]) => members.some((m) => m.id === staffId))),
+    addable: catalog
+      .filter((s) => s.active && offeredIds.has(s.id) && !onIt.has(s.id))
+      .map((s) => ({ id: s.id, name: s.name, durationMinutes: s.durationMinutes, priceCents: s.priceCents })),
+    source: repo.dataSource(),
+  };
+}
+
+/**
+ * Add a service after check-in. The server re-checks everything the booking form does: the appointment belongs to
+ * this tenant and is checked in / in service, the service is an active one the branch offers (priced from the
+ * catalog, never from the client), the count stays within the maximum, and the team member works at the branch and
+ * performs the service. The visit's status is untouched.
+ */
+export async function addServiceLine(ctx: TenantContext, input: AddServiceLineInput): Promise<void> {
+  repo.assertWritable();
+  const appointment = await repo.findById(ctx.tenantId, input.appointmentId);
+  if (!appointment) throw new AppError("NOT_FOUND", "Appointment not found.");
+  if (!canManageLines(appointment.status)) throwLineFailure({ ok: false, reason: "appointment_state", status: appointment.status });
+
+  const service = (await tenantsService.listTenantServices(ctx.tenantId)).find((s) => s.id === input.serviceId);
+  if (!service || !service.active) throw new AppError("VALIDATION", "Choose an active service.", { serviceId: ["Choose an active service."] });
+  const { offeredIds } = await branchesService.getBranchServices(ctx, appointment.branchId);
+  if (!offeredIds.includes(service.id)) {
+    throw new AppError("VALIDATION", "This branch doesn't offer that service.", { serviceId: [`This branch doesn't offer ${service.name}.`] });
+  }
+
+  const result = await repo.addLine(ctx.tenantId, ctx.userId, {
+    appointmentId: appointment.id,
+    line: { serviceId: service.id, name: service.name, priceCents: service.priceCents, durationMinutes: service.durationMinutes },
+    staffId: input.staffId ?? null,
+  });
+  if (!result.ok) throwLineFailure(result);
+}
+
+export async function removeServiceLine(ctx: TenantContext, input: RemoveServiceLineInput): Promise<void> {
+  repo.assertWritable();
+  const result = await repo.removeLine(ctx.tenantId, ctx.userId, input);
+  if (!result.ok) {
+    if (result.reason === "line_state") throw new AppError("CONFLICT", "Only services that haven't started can be removed.");
+    throwLineFailure(result);
+  }
+}
+
+/** Start or finish one service. The first start moves a checked-in visit to in service; no line ever completes the visit. */
+export async function changeServiceLineStatus(ctx: TenantContext, input: ChangeServiceLineStatusInput, now = new Date()): Promise<void> {
+  repo.assertWritable();
+  const result = await repo.changeLineStatus(ctx.tenantId, ctx.userId, { appointmentId: input.appointmentId, lineId: input.lineId, to: input.status }, now);
+  if (!result.ok) throwLineFailure(result);
+}
+
+/**
+ * Hand a service to another team member. Before the service is finished that is a reassignment. After it, it is a
+ * correction that needs a reason: who actually performed it, and when, stay on the line, and the history records the
+ * change. Receipts and invoices already issued are never touched.
+ */
+export async function reassignServiceLine(ctx: TenantContext, input: ReassignServiceLineInput): Promise<void> {
+  repo.assertWritable();
+  const result = await repo.reassignLine(ctx.tenantId, ctx.userId, {
+    appointmentId: input.appointmentId,
+    lineId: input.lineId,
+    staffId: input.staffId,
+    reason: input.reason && input.reason.length >= REASSIGN_REASON_MIN ? input.reason : null,
+  });
+  if (!result.ok) throwLineFailure(result);
+}
+
+// --- Customer reviews (receipt QR) -----------------------------------------------------------------------------
+
+const DAY_MS = 24 * 60 * 60_000;
+
+/**
+ * The review link for a completed appointment, issued on first use and stable after (a reprinted receipt shows the
+ * same code). Valid for REVIEW_LINK_TTL_DAYS from issue. One review per appointment: once it is submitted the link
+ * reports `submitted` and the receipt stops offering it.
+ */
+export async function getReceiptReviewLink(ctx: TenantContext, appointmentId: string, now = new Date()): Promise<ReceiptReviewLink> {
+  if (repo.dataSource() === "demo") return { state: "unavailable" };
+  const request = await repo.ensureReviewRequest(ctx.tenantId, appointmentId, newReviewNonce(), new Date(now.getTime() + REVIEW_LINK_TTL_DAYS * DAY_MS));
+  if (!request) return { state: "unavailable" };
+  if (request.submittedAt) return { state: "submitted" };
+  if (request.expiresAt.getTime() <= now.getTime()) return { state: "expired" };
+  return { state: "open", token: signReviewToken(ctx.tenantId, request.nonce, getSessionSecret()), expiresAt: request.expiresAt };
+}
+
+/** What the public page may show for a link. Anything not genuinely issued by this server is `invalid`. */
+export async function getPublicReview(token: string, now = new Date()): Promise<PublicReview> {
+  const parsed = verifyReviewToken(token, getSessionSecret());
+  if (!parsed) return { state: "invalid" };
+  return repo.readPublicReview(parsed.tenantId, parsed.nonce, now);
+}
+
+export type SubmitReviewOutcome = { ok: true } | { ok: false; state: "invalid" | "expired" | "submitted" };
+
+/** Validate and store a public review. Only the first submission for a link is accepted; later ones are refused. */
+export async function submitReview(input: SubmitReviewInput, now = new Date()): Promise<SubmitReviewOutcome> {
+  repo.assertWritable();
+  const parsed = verifyReviewToken(input.token, getSessionSecret());
+  if (!parsed) return { ok: false, state: "invalid" };
+  const result = await repo.submitReview(
+    parsed.tenantId,
+    parsed.nonce,
+    { salonRating: input.salonRating, comment: input.comment ?? null, serviceRatings: input.serviceRatings, staffRatings: input.staffRatings },
+    now,
+  );
+  if (result.ok) return { ok: true };
+  return { ok: false, state: result.reason === "unknown_target" ? "invalid" : result.reason };
 }

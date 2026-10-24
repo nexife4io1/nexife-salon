@@ -52,6 +52,28 @@ export function canMarkNoShow(a: { type: AppointmentType; status: AppointmentSta
   return a.type === "booking" && canTransition(a.status, "no_show") && a.startsAt.getTime() <= now.getTime();
 }
 
+// --- Service lines ----------------------------------------------------------------------------------
+
+export const SERVICE_LINE_STATUSES = ["pending", "in_progress", "completed"] as const;
+export const serviceLineStatusSchema = z.enum(SERVICE_LINE_STATUSES);
+export type ServiceLineStatus = z.infer<typeof serviceLineStatusSchema>;
+export const SERVICE_LINE_STATUS_LABELS: Record<ServiceLineStatus, string> = { pending: "To do", in_progress: "In progress", completed: "Done" };
+
+/** Legal moves for one service line. Completed is final; a wrong staff member is fixed by a correction, not by reopening. */
+export const SERVICE_LINE_TRANSITIONS: Record<ServiceLineStatus, readonly ServiceLineStatus[]> = {
+  pending: ["in_progress"],
+  in_progress: ["completed"],
+  completed: [],
+};
+export const canTransitionLine = (from: ServiceLineStatus, to: ServiceLineStatus): boolean => SERVICE_LINE_TRANSITIONS[from].includes(to);
+
+/** Appointment statuses in which services can be added, removed, started and completed (work has begun, not finished). */
+export const LINE_WORK_STATUSES = ["checked_in", "in_service"] as const satisfies readonly AppointmentStatus[];
+export const canManageLines = (status: AppointmentStatus): boolean => (LINE_WORK_STATUSES as readonly AppointmentStatus[]).includes(status);
+
+/** A team member can be reassigned while work is under way, and corrected afterwards (even once the visit is completed). */
+export const canReassignLines = (status: AppointmentStatus): boolean => canManageLines(status) || status === "completed";
+
 /** One booked service, as snapshotted when the appointment was made (name, price and duration never change later). */
 export const appointmentServiceLineSchema = z.object({
   id: z.string(),
@@ -59,6 +81,18 @@ export const appointmentServiceLineSchema = z.object({
   name: z.string(),
   priceCents: z.number().int(),
   durationMinutes: z.number().int(),
+  status: serviceLineStatusSchema,
+  /**
+   * Who is responsible for this service now (falls back to the appointment's team member for older rows). In board and
+   * history lists these are null when it is the appointment's own team member; a single read (`findAppointment`) always fills them.
+   */
+  staffId: z.string().nullish(),
+  staffName: z.string().nullish(),
+  /** Filled by a single-appointment read only (absent in lists). */
+  startedAt: z.date().nullish(),
+  completedAt: z.date().nullish(),
+  /** Who was recorded as doing the work when it was completed. Never rewritten by a later correction. Single-appointment read only. */
+  performedByName: z.string().nullish(),
 });
 export type AppointmentServiceLine = z.infer<typeof appointmentServiceLineSchema>;
 
@@ -141,6 +175,47 @@ export const changeAppointmentStatusInputSchema = z.object({
 });
 export type ChangeAppointmentStatusInput = z.infer<typeof changeAppointmentStatusInputSchema>;
 
+const lineIdSchema = z.string().uuid("Service not found");
+const appointmentIdSchema = z.string().uuid("Appointment not found");
+
+export const addServiceLineInputSchema = z.object({
+  appointmentId: appointmentIdSchema,
+  serviceId: z.string({ error: "Choose a service" }).uuid("Choose a service"),
+  staffId: optionalUuid,
+});
+export type AddServiceLineInput = z.output<typeof addServiceLineInputSchema>;
+
+export const removeServiceLineInputSchema = z.object({ appointmentId: appointmentIdSchema, lineId: lineIdSchema });
+export type RemoveServiceLineInput = z.output<typeof removeServiceLineInputSchema>;
+
+export const changeServiceLineStatusInputSchema = z.object({
+  appointmentId: appointmentIdSchema,
+  lineId: lineIdSchema,
+  status: z.enum(["in_progress", "completed"]),
+});
+export type ChangeServiceLineStatusInput = z.output<typeof changeServiceLineStatusInputSchema>;
+
+/** A reason is mandatory once the service is completed: it goes into the audit trail next to who did what. */
+export const REASSIGN_REASON_MIN = 3;
+export const reassignServiceLineInputSchema = z.object({
+  appointmentId: appointmentIdSchema,
+  lineId: lineIdSchema,
+  staffId: z.string({ error: "Choose a team member" }).uuid("Choose a team member"),
+  reason: z.preprocess(blankToUndefined, z.string().trim().max(300, "Keep the reason under 300 characters").optional()),
+});
+export type ReassignServiceLineInput = z.output<typeof reassignServiceLineInputSchema>;
+
+/** One entry of the service history shown on the appointment. */
+export type ServiceLineEvent = {
+  id: string;
+  kind: "added" | "removed" | "started" | "completed" | "reassigned" | "corrected";
+  serviceName: string;
+  fromStaffName: string | null;
+  toStaffName: string | null;
+  reason: string | null;
+  createdAt: Date;
+};
+
 export const deleteAppointmentInputSchema = z.object({ id: z.string().uuid("Appointment not found") });
 export type DeleteAppointmentInput = z.infer<typeof deleteAppointmentInputSchema>;
 
@@ -207,6 +282,11 @@ export type AppointmentBoard = {
   /** Active staff for the column headers (appointments may reference staff not listed here). */
   staff: { id: string; name: string; title: string | null; branchId: string | null }[];
   branches: { id: string; name: string }[];
+  /**
+   * The day's completed appointments, listed beside the default Upcoming view so finished work stays one glance away.
+   * Empty for any explicit status filter (the board itself then shows that status).
+   */
+  completed: Appointment[];
   /** Counts for the whole day under the branch filter, before the status filter, so the chips stay stable. */
   counts: Record<AppointmentStatus, number>;
   source: "database" | "demo";
@@ -225,7 +305,34 @@ export type BookingOptions = {
   staff: { id: string; name: string; title: string | null; branchId: string | null }[];
   /** Service ids each staff member performs. Staff absent from the map have declared none and can take any service. */
   staffServices: Record<string, string[]>;
-  customers: { id: string; name: string; phone: string | null }[];
+  /** The most recent customers: a starting list for the picker, not the whole directory (the picker searches the server). */
+  customers: CustomerChoice[];
+  /** True when more customers exist than `customers` holds, so the picker must search the server. */
+  customersTruncated: boolean;
+  source: "database" | "demo";
+};
+
+export type CustomerChoice = { id: string; name: string; phone: string | null };
+/** How many customers the booking form preloads, and the most one search returns. */
+export const CUSTOMER_PICKER_LIMIT = 20;
+export const customerSearchQuerySchema = z.string().trim().min(1).max(80);
+
+/** The service-management screen of one appointment (add / start / complete / reassign, plus the history). */
+export type AppointmentServicesView = {
+  appointment: Appointment;
+  timezone: string;
+  currency: string;
+  events: ServiceLineEvent[];
+  /** Services can be added, removed, started and completed. */
+  canManage: boolean;
+  /** Services can be handed to another team member (including after completion, as a correction). */
+  canReassign: boolean;
+  /** Active team members at the appointment's branch. */
+  team: { id: string; name: string; title: string | null }[];
+  /** Service ids each team member performs. Members absent from the map have declared none and can take any service. */
+  teamServices: Record<string, string[]>;
+  /** Active services the branch offers that are not on the appointment yet. */
+  addable: { id: string; name: string; durationMinutes: number; priceCents: number }[];
   source: "database" | "demo";
 };
 
@@ -236,3 +343,65 @@ export function bookingFormValues(formData: FormData): BookingFormValues {
   for (const [key, value] of formData.entries()) if (typeof value === "string") values[key] = value;
   return values;
 }
+
+// --- Customer reviews (QR on the receipt) -------------------------------------------------------------
+
+/** How long a receipt's review link keeps working, counted from when the link is first issued. */
+export const REVIEW_LINK_TTL_DAYS = 30;
+export const REVIEW_COMMENT_MAX = 1000;
+export const MIN_RATING = 1;
+export const MAX_RATING = 5;
+
+const ratingSchema = z.number({ error: "Choose a rating from 1 to 5" }).int("Choose a rating from 1 to 5").min(MIN_RATING, "Choose a rating from 1 to 5").max(MAX_RATING, "Choose a rating from 1 to 5");
+const ratingMap = z.record(z.string().uuid(), ratingSchema);
+
+/**
+ * What the public page submits. Ratings are keyed by the ids the page was given for *this* visit: service line ids
+ * and team member ids. Anything not belonging to the visit is rejected by the service. Service and team ratings are
+ * optional (a customer may skip what they cannot judge); the salon rating is required.
+ */
+export const submitReviewInputSchema = z.object({
+  token: z.string().min(1).max(200),
+  salonRating: ratingSchema,
+  serviceRatings: ratingMap.default({}),
+  staffRatings: ratingMap.default({}),
+  comment: z.preprocess(blankToUndefined, z.string().trim().max(REVIEW_COMMENT_MAX, `Keep your comment under ${REVIEW_COMMENT_MAX} characters`).optional()),
+});
+export type SubmitReviewInput = z.output<typeof submitReviewInputSchema>;
+
+/** Form fields -> input: `salon`, `service:<line id>`, `staff:<team member id>`, `comment`, `token`. Blank = not rated. */
+export function reviewInputFromForm(formData: FormData): unknown {
+  const serviceRatings: Record<string, number> = {};
+  const staffRatings: Record<string, number> = {};
+  for (const [key, value] of formData.entries()) {
+    if (typeof value !== "string" || value.trim() === "") continue;
+    if (key.startsWith("service:")) serviceRatings[key.slice(8)] = Number(value);
+    else if (key.startsWith("staff:")) staffRatings[key.slice(6)] = Number(value);
+  }
+  const salon = formData.get("salon");
+  return {
+    token: formData.get("token") ?? "",
+    salonRating: typeof salon === "string" && salon.trim() !== "" ? Number(salon) : undefined,
+    serviceRatings,
+    staffRatings,
+    comment: formData.get("comment") ?? undefined,
+  };
+}
+
+/**
+ * Everything the public page may show: the services performed and the people who performed them. Deliberately
+ * nothing about the tenant, the customer, prices, dates or internal appointment ids.
+ */
+export type PublicReview =
+  | { state: "invalid" | "expired" | "submitted" }
+  | {
+      state: "open";
+      expiresAt: Date;
+      services: { id: string; name: string; staffId: string | null }[];
+      staff: { id: string; name: string; serviceNames: string[] }[];
+    };
+
+/** The link a receipt shows, or why it shows none. */
+export type ReceiptReviewLink = { state: "open"; token: string; expiresAt: Date } | { state: "submitted" | "expired" | "unavailable" };
+/** The same, with the full public URL (built where the request origin is known). */
+export type ReceiptReviewLinkView = { state: "open"; url: string; expiresAt: Date } | { state: "submitted" | "expired" | "unavailable" };

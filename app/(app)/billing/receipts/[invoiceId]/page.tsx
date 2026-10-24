@@ -3,6 +3,8 @@ import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { PrintButton } from "@/components/views/billing/print-button";
 import { Receipt } from "@/components/views/billing/receipt";
+import { ReviewQr } from "@/components/views/appointments/review-qr";
+import { getReviewLinkForReceipt } from "@/server/appointments/queries";
 import { getReceiptView } from "@/server/billing/queries";
 
 export const metadata: Metadata = { title: "Receipt" };
@@ -10,6 +12,7 @@ export const metadata: Metadata = { title: "Receipt" };
 export default async function ReceiptPage({ params }: { params: Promise<{ invoiceId: string }> }) {
   const { invoiceId } = await params;
   const receipt = await getReceiptView(invoiceId);
+  const reviewLink = await getReviewLinkForReceipt(receipt.appointmentId);
 
   return (
     <>
@@ -33,6 +36,9 @@ export default async function ReceiptPage({ params }: { params: Promise<{ invoic
         />
       </div>
       <Receipt receipt={receipt} />
+      <div className="mx-auto w-full max-w-2xl">
+        <ReviewQr link={reviewLink} timezone={receipt.timezone} />
+      </div>
     </>
   );
 }

@@ -8,18 +8,18 @@ import { Icon, type IconName } from "@/components/ui/icon";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
 import { bookAppointmentAction, updateAppointmentAction } from "@/server/appointments/actions";
+import { CustomerPicker } from "./customer-picker";
 import {
   APPOINTMENT_TYPES,
   APPOINTMENT_TYPE_LABELS,
   MAX_SERVICES_PER_APPOINTMENT,
   type AppointmentType,
   type BookingOptions,
+  type CustomerChoice,
   type EditableAppointment,
 } from "@/server/appointments/schema";
 
 export type BookingPrefill = { branchId?: string; staffId?: string; date?: string; customerId?: string };
-
-const CUSTOMER_LIMIT = 100;
 
 function Section({ step, icon, title, description, children }: { step: number; icon: IconName; title: string; description?: string; children: ReactNode }) {
   return (
@@ -61,8 +61,7 @@ export function BookingForm({ options, prefill = {}, editing }: { options: Booki
   const initialStaffId = editing ? (editing.staffId ?? undefined) : prefill.staffId;
   const [staffId, setStaffId] = useState(initialStaffId && options.staff.some((s) => s.id === initialStaffId && s.branchId === firstBranch?.id) ? initialStaffId : "");
   const initialCustomerId = editing ? (editing.customerId ?? undefined) : prefill.customerId;
-  const [customerId, setCustomerId] = useState(initialCustomerId && options.customers.some((c) => c.id === initialCustomerId) ? initialCustomerId : "");
-  const [customerQuery, setCustomerQuery] = useState("");
+  const [customer, setCustomer] = useState<CustomerChoice | undefined>(options.customers.find((c) => c.id === initialCustomerId));
   const [date, setDate] = useState(editing ? editing.date : prefill.date && prefill.date >= options.today ? prefill.date : options.today);
   const [time, setTime] = useState(editing?.time ?? "");
   const [notes, setNotes] = useState(editing?.notes ?? "");
@@ -78,13 +77,7 @@ export function BookingForm({ options, prefill = {}, editing }: { options: Booki
   const totalMinutes = chosenServices.reduce((sum, s) => sum + s.durationMinutes, 0);
   const totalCents = chosenServices.reduce((sum, s) => sum + s.priceCents, 0);
   const member = team.find((s) => s.id === staffId);
-  const customer = options.customers.find((c) => c.id === customerId);
   const walkIn = type === "walk_in";
-  const q = customerQuery.trim().toLowerCase();
-  const qDigits = q.replace(/\D/g, "");
-  const matchedCustomers = q
-    ? options.customers.filter((c) => c.id === customerId || c.name.toLowerCase().includes(q) || (qDigits && (c.phone ?? "").replace(/\D/g, "").includes(qDigits)))
-    : options.customers;
 
   const chooseBranch = (next: string) => {
     setBranchId(next);
@@ -153,30 +146,23 @@ export function BookingForm({ options, prefill = {}, editing }: { options: Booki
               htmlFor="customerId"
               errors={fieldErrors?.customerId}
               hint={
-                options.customers.length >= CUSTOMER_LIMIT
-                  ? `Showing the first ${CUSTOMER_LIMIT} customers.`
-                  : !options.customers.length
-                    ? "No customers yet. Add one from Customers, or book a walk-in."
-                    : undefined
+                !options.customers.length
+                  ? "No customers yet. Add one from Customers, or book a walk-in."
+                  : walkIn
+                    ? "Leave empty for a walk-in with no customer on file."
+                    : "Type a name or phone number, then choose a result."
               }
             >
-              <Input
-                type="search"
-                aria-label="Search customers by name or phone"
-                placeholder="Search by name or phone"
-                value={customerQuery}
-                onChange={(e) => setCustomerQuery(e.target.value)}
-                className="mb-2"
+              <CustomerPicker
+                value={customer?.id ?? ""}
+                selected={customer}
+                initial={options.customers}
+                truncated={options.customersTruncated}
+                onChange={setCustomer}
+                invalid={Boolean(fieldErrors?.customerId)}
+                optional={walkIn}
+                readOnly={readOnly}
               />
-              <Select {...ctl("customerId")} value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-                <option value="">{walkIn ? "Walk-in (no customer on file)" : q && !matchedCustomers.length ? "No matching customers" : "Select customer"}</option>
-                {matchedCustomers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                    {c.phone ? ` · ${c.phone}` : ""}
-                  </option>
-                ))}
-              </Select>
               {!readOnly && (
                 <ButtonLink href="/customers/new?from=booking" variant="ghost" size="sm" icon="plus" className="-ml-3 self-start">
                   New client

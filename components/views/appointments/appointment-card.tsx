@@ -5,8 +5,10 @@ import { formatMoney } from "@/lib/format";
 import {
   APPOINTMENT_STATUS_LABELS,
   APPOINTMENT_TYPE_LABELS,
+  SERVICE_LINE_STATUS_LABELS,
   canEditAppointment,
   canMarkNoShow,
+  canReassignLines,
   type Appointment,
   type AppointmentStatus,
 } from "@/server/appointments/schema";
@@ -55,6 +57,8 @@ export function AppointmentCard({
 }) {
   const closed = a.status === "cancelled" || a.status === "no_show";
   const who = a.customerName ?? "walk-in";
+  // Once work has started, each service shows who has it and how far along it is.
+  const inProgress = a.status === "checked_in" || a.status === "in_service" || a.status === "completed";
   return (
     <article
       className={cn(
@@ -78,6 +82,12 @@ export function AppointmentCard({
             <li key={line.id} className="flex justify-between gap-3">
               <span>
                 {line.name} · {line.durationMinutes} min
+                {inProgress && (
+                  <span className="block text-label-sm">
+                    {line.staffName ? `${line.staffName} · ` : ""}
+                    {SERVICE_LINE_STATUS_LABELS[line.status]}
+                  </span>
+                )}
               </span>
               <span>{formatMoney(line.priceCents, currency)}</span>
             </li>
@@ -118,6 +128,7 @@ export function AppointmentCard({
           who={who}
           canNoShow={canMarkNoShow(a, now)}
           canEdit={canEditAppointment(a)}
+          canManageServices={canReassignLines(a.status)}
           checkoutHref={billing?.canCheckout && !billing.receiptId ? `/billing/checkout/${a.id}` : undefined}
         />
       )}

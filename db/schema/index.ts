@@ -9,3 +9,4 @@ export * from "./tenancy";
 export * from "./operations";
 export * from "./ledger";
 export * from "./inventory";
+export * from "./feedback";

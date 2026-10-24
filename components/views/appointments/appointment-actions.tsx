@@ -27,6 +27,7 @@ export function AppointmentActions({
   who,
   canNoShow,
   canEdit,
+  canManageServices,
   checkoutHref,
 }: {
   id: string;
@@ -35,6 +36,8 @@ export function AppointmentActions({
   who: string;
   canNoShow: boolean;
   canEdit: boolean;
+  /** Checked in, in service or completed: the Services screen has something to do. */
+  canManageServices: boolean;
   checkoutHref?: string;
 }) {
   const router = useRouter();
@@ -57,6 +60,11 @@ export function AppointmentActions({
           {canEdit && (
             <ButtonLink href={`/appointments/${id}/edit`} variant="ghost" size="sm" className="px-2">
               Edit
+            </ButtonLink>
+          )}
+          {canManageServices && (
+            <ButtonLink href={`/appointments/${id}/services`} variant="ghost" size="sm" className="px-2">
+              Services
             </ButtonLink>
           )}
           {secondary.map((to) => (

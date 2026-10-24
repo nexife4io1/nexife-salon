@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Icon } from "@/components/ui/icon";
 import { pluralize } from "@/lib/format";
-import type { Appointment, AppointmentBoard } from "@/server/appointments/schema";
+import { appointmentsHref, type Appointment, type AppointmentBoard } from "@/server/appointments/schema";
 import { AppointmentCard, type CardBilling } from "./appointment-card";
 import { formatDay } from "./format";
 
@@ -47,9 +47,45 @@ export function AppointmentsBoard({ board, currency, canCheckout, receipts }: { 
   const columns = buildColumns(board);
   const branchNames = new Map(board.branches.map((b) => [b.id, b.name]));
   const showBranch = !board.filters.branchId && board.branches.length > 1;
+  const billing = { canCheckout };
+  const card = (appointment: Appointment) => (
+    <AppointmentCard
+      key={appointment.id}
+      appointment={appointment}
+      timezone={board.timezone}
+      currency={currency}
+      billing={{ ...billing, receiptId: receipts[appointment.id] } satisfies CardBilling}
+      branchName={showBranch ? branchNames.get(appointment.branchId) : undefined}
+      readOnly={readOnly}
+      now={board.now}
+    />
+  );
+
+  // Finished work leaves the to-do columns above but stays on this screen, with its bill, receipt and services intact.
+  const completedHref = appointmentsHref({ ...board.filters, date: board.date === board.today ? undefined : board.date, status: "completed" });
+  const completedSection = board.completed.length ? (
+    <section aria-labelledby="completed-heading" className="mt-2 border-t border-outline-variant/20 pt-6">
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="completed-heading" className="font-headline text-headline-sm font-semibold text-on-surface">
+          {canCheckout ? "Awaiting payment" : "Completed"} <span className="text-secondary">({board.completed.length})</span>
+        </h2>
+        <Link href={completedHref} replace className="text-label-md text-primary hover:underline">
+          Show all completed
+        </Link>
+      </div>
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {board.completed.map((appointment) => (
+          <li key={appointment.id} className="min-w-0">
+            {card(appointment)}
+          </li>
+        ))}
+      </ul>
+    </section>
+  ) : null;
 
   if (!columns.length) {
     return (
+      <>
       <Card>
         <EmptyState
           icon="calendar"
@@ -60,7 +96,7 @@ export function AppointmentsBoard({ board, currency, canCheckout, receipts }: { 
               : filtered
                 ? "Try another status or branch, or clear the filters."
                 : upcoming
-                  ? "Bookings and walk-ins still to come this day appear here. Choose All to include finished and closed ones."
+                  ? "Bookings and walk-ins still to do this day appear here. Finished ones are listed under Completed."
                   : "Bookings and walk-ins for this day will appear here."
           }
           action={
@@ -72,10 +108,13 @@ export function AppointmentsBoard({ board, currency, canCheckout, receipts }: { 
           }
         />
       </Card>
+      {completedSection}
+      </>
     );
   }
 
   return (
+    <>
     <div className="-mx-1 flex gap-6 overflow-x-auto px-1 pb-6" role="list" aria-label="Team schedule">
       {columns.map((column) => (
         <section key={column.key} role="listitem" aria-label={column.name} className="flex w-[19rem] shrink-0 flex-col gap-4">
@@ -96,18 +135,7 @@ export function AppointmentsBoard({ board, currency, canCheckout, receipts }: { 
             </div>
           </header>
           <div className="flex flex-col gap-4">
-            {column.appointments.map((appointment) => (
-              <AppointmentCard
-                key={appointment.id}
-                appointment={appointment}
-                timezone={board.timezone}
-                currency={currency}
-                billing={{ canCheckout, receiptId: receipts[appointment.id] } satisfies CardBilling}
-                branchName={showBranch ? branchNames.get(appointment.branchId) : undefined}
-                readOnly={readOnly}
-                now={board.now}
-              />
-            ))}
+            {column.appointments.map(card)}
             {!readOnly && column.staffId && !statusFiltered && (
               <Link
                 href={bookHref(board, column.staffId, column.branchId)}
@@ -122,5 +150,7 @@ export function AppointmentsBoard({ board, currency, canCheckout, receipts }: { 
         </section>
       ))}
     </div>
+    {completedSection}
+    </>
   );
 }

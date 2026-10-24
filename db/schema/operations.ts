@@ -18,6 +18,8 @@ export const appointmentStatus = salon.enum("appointment_status", [
   "no_show",
 ]);
 export const appointmentType = salon.enum("appointment_type", ["booking", "walk_in"]);
+// Progress of one booked service. Keep in sync with server/appointments/schema.ts.
+export const appointmentServiceStatus = salon.enum("appointment_service_status", ["pending", "in_progress", "completed"]);
 // Who a service is for. Keep in sync with server/shared/audience.ts.
 export const serviceAudience = salon.enum("service_audience", ["unisex", "women", "men", "kids"]);
 
@@ -294,6 +296,14 @@ export const appointmentServices = salon.table(
     priceCents: integer("price_cents").notNull(),
     durationMinutes: integer("duration_minutes").notNull(),
     position: smallint("position").notNull().default(0),
+    status: appointmentServiceStatus("status").notNull().default("pending"),
+    /** Who is responsible for this service now. Null = falls back to the appointment's staff member. */
+    staffId: uuid("staff_id").references(() => staff.id, { onDelete: "set null" }),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    /** Who was recorded as doing the work when it was completed. Written once and never rewritten by a later reassignment. */
+    performedByStaffId: uuid("performed_by_staff_id").references(() => staff.id, { onDelete: "set null" }),
+    performedByName: text("performed_by_name"),
     ...timestamps(),
   },
   (t) => [
@@ -301,5 +311,40 @@ export const appointmentServices = salon.table(
     index("appointment_services_tenant_idx").on(t.tenantId),
     check("appointment_services_price_chk", sql`${t.priceCents} >= 0`),
     check("appointment_services_duration_chk", sql`${t.durationMinutes} > 0`),
+  ],
+);
+
+/**
+ * Append-only history of what happened to an appointment's service lines: added, removed, started, completed,
+ * reassigned, or corrected after completion. Names are snapshotted so the trail survives staff or service removal.
+ * `service_line_id` has no foreign key on purpose: a removed line must stay in the trail.
+ */
+export const appointmentServiceEvents = salon.table(
+  "appointment_service_events",
+  {
+    id: id(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    appointmentId: uuid("appointment_id")
+      .notNull()
+      .references(() => appointments.id, { onDelete: "cascade" }),
+    serviceLineId: uuid("service_line_id").notNull(),
+    serviceName: text("service_name").notNull(),
+    kind: text("kind").notNull(),
+    fromStatus: appointmentServiceStatus("from_status"),
+    toStatus: appointmentServiceStatus("to_status"),
+    fromStaffId: uuid("from_staff_id"),
+    fromStaffName: text("from_staff_name"),
+    toStaffId: uuid("to_staff_id"),
+    toStaffName: text("to_staff_name"),
+    reason: text("reason"),
+    actorUserId: text("actor_user_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("appointment_service_events_appointment_idx").on(t.appointmentId, t.createdAt),
+    index("appointment_service_events_tenant_idx").on(t.tenantId),
+    check("appointment_service_events_kind_chk", sql`${t.kind} in ('added', 'removed', 'started', 'completed', 'reassigned', 'corrected')`),
   ],
 );

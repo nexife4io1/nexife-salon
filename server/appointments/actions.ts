@@ -5,7 +5,20 @@ import { redirect } from "next/navigation";
 import { getTenantContext } from "@/server/shared/context";
 import { AppError, validationError } from "@/server/shared/errors";
 import { ok, toActionError, type ActionResult } from "@/server/shared/result";
-import { appointmentsHref, bookAppointmentInputSchema, changeAppointmentStatusInputSchema, deleteAppointmentInputSchema } from "./schema";
+import {
+  addServiceLineInputSchema,
+  appointmentsHref,
+  bookAppointmentInputSchema,
+  changeAppointmentStatusInputSchema,
+  changeServiceLineStatusInputSchema,
+  customerSearchQuerySchema,
+  deleteAppointmentInputSchema,
+  reassignServiceLineInputSchema,
+  removeServiceLineInputSchema,
+  reviewInputFromForm,
+  submitReviewInputSchema,
+  type CustomerChoice,
+} from "./schema";
 import * as service from "./service";
 
 const FORBIDDEN = "You don't have access to appointments.";
@@ -89,5 +102,103 @@ export async function changeAppointmentStatusAction(_prev: ActionResult | undefi
 
   revalidatePath("/appointments");
   revalidatePath("/branches");
+  return ok(undefined);
+}
+
+/** Customer picker search: name or phone fragment -> a short list of matches across the whole directory. */
+export async function searchCustomersAction(query: string): Promise<CustomerChoice[]> {
+  const ctx = await getTenantContext("appointments");
+  if (!ctx || !customerSearchQuerySchema.safeParse(query).success) return [];
+  return service.searchCustomerChoices(ctx, query);
+}
+
+// --- Service lines -------------------------------------------------------------------------------------------
+
+function refreshServices(appointmentId: string) {
+  revalidatePath("/appointments");
+  revalidatePath(`/appointments/${appointmentId}/services`);
+}
+
+/** Add a service to an appointment that is checked in or in service. */
+export async function addServiceLineAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {
+  const ctx = await getTenantContext("appointments");
+  if (!ctx) return toActionError(new AppError("FORBIDDEN", FORBIDDEN));
+  const parsed = addServiceLineInputSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return toActionError(validationError(parsed.error));
+  try {
+    await service.addServiceLine(ctx, parsed.data);
+  } catch (error) {
+    return toActionError(error);
+  }
+  refreshServices(parsed.data.appointmentId);
+  return ok(undefined);
+}
+
+export async function removeServiceLineAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {
+  const ctx = await getTenantContext("appointments");
+  if (!ctx) return toActionError(new AppError("FORBIDDEN", FORBIDDEN));
+  const parsed = removeServiceLineInputSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return toActionError(validationError(parsed.error));
+  try {
+    await service.removeServiceLine(ctx, parsed.data);
+  } catch (error) {
+    return toActionError(error);
+  }
+  refreshServices(parsed.data.appointmentId);
+  return ok(undefined);
+}
+
+/** Start or finish one service of an appointment. */
+export async function changeServiceLineStatusAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {
+  const ctx = await getTenantContext("appointments");
+  if (!ctx) return toActionError(new AppError("FORBIDDEN", FORBIDDEN));
+  const parsed = changeServiceLineStatusInputSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return toActionError(validationError(parsed.error));
+  try {
+    await service.changeServiceLineStatus(ctx, parsed.data);
+  } catch (error) {
+    return toActionError(error);
+  }
+  refreshServices(parsed.data.appointmentId);
+  return ok(undefined);
+}
+
+/** Hand a service to another team member; after completion this is a logged correction that needs a reason. */
+export async function reassignServiceLineAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {
+  const ctx = await getTenantContext("appointments");
+  if (!ctx) return toActionError(new AppError("FORBIDDEN", FORBIDDEN));
+  const parsed = reassignServiceLineInputSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return toActionError(validationError(parsed.error));
+  try {
+    await service.reassignServiceLine(ctx, parsed.data);
+  } catch (error) {
+    return toActionError(error);
+  }
+  refreshServices(parsed.data.appointmentId);
+  revalidatePath("/billing");
+  return ok(undefined);
+}
+
+// --- Public review (no session: the signed link is the credential) -----------------------------------------------
+
+const REVIEW_STATE_MESSAGES = {
+  invalid: { code: "NOT_FOUND", message: "This review link isn't valid." },
+  expired: { code: "CONFLICT", message: "This review link has expired." },
+  submitted: { code: "CONFLICT", message: "A review has already been sent for this visit. Thank you!" },
+} as const;
+
+/** Store a customer's review. The only action in this file that does not require a signed-in user. */
+export async function submitReviewAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {
+  const parsed = submitReviewInputSchema.safeParse(reviewInputFromForm(formData));
+  if (!parsed.success) return toActionError(validationError(parsed.error));
+  try {
+    const outcome = await service.submitReview(parsed.data);
+    if (!outcome.ok) {
+      const { code, message } = REVIEW_STATE_MESSAGES[outcome.state];
+      return toActionError(new AppError(code, message));
+    }
+  } catch (error) {
+    return toActionError(error);
+  }
   return ok(undefined);
 }

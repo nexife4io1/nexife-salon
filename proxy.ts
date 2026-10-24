@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { decodeSession, SESSION_COOKIE } from "@/server/shared/session-token";
 
 const ATTENDANCE_PATH = "/attendance";
+/** Customers open the review link from a receipt QR code: the signed token in the URL is the credential, not a session. */
+const REVIEW_PREFIX = "/review/";
 
 /**
  * Optimistic auth check (cookie signature + expiry only, no DB). Real
@@ -10,7 +12,7 @@ const ATTENDANCE_PATH = "/attendance";
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   // Public mobile page: staff authenticate with a registration code + phone, not a user session.
-  if (pathname === ATTENDANCE_PATH) return NextResponse.next();
+  if (pathname === ATTENDANCE_PATH || pathname.startsWith(REVIEW_PREFIX)) return NextResponse.next();
 
   const session = decodeSession(request.cookies.get(SESSION_COOKIE)?.value);
 
