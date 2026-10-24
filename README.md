@@ -11,7 +11,7 @@ Next.js 16 app with separate frontend, backend and database modules.
 ## Stack
 
 Next.js 16.3.1 (App Router, Turbopack) · React 19 · TypeScript · Tailwind CSS 4 · Zod 4 ·
-Drizzle ORM + Supabase Postgres · Vitest
+Drizzle ORM + PostgreSQL (Neon-compatible) · Vitest
 
 ## Quick start (no database needed)
 
@@ -32,17 +32,20 @@ With no `DATABASE_URL`, the app runs on **read-only demo fixtures**. Sign in wit
 
 (Change the password with `DEMO_PASSWORD`. Demo login is disabled in production builds.)
 
-## With a database (Supabase Postgres)
+## With a database (Neon or PostgreSQL)
 
 ```bash
 # .env.local
-DATABASE_URL=postgres://…        # Supabase direct or session-pooler URL
+DATABASE_URL=postgresql://…      # Neon or another PostgreSQL connection string
 SESSION_SECRET=<32+ random chars>
 
 npm run db:migrate   # creates the `salon` schema, tables and RLS policies
 npm run db:seed      # demo tenants, branches, users (hashed passwords), services, staff
 npm run dev
 ```
+
+Keep `DATABASE_URL` server-only and out of source control. For tenant isolation,
+the application role must not own the tables or have the `BYPASSRLS` attribute.
 
 Change the schema in `db/schema/*`, then run `npm run db:generate` to write a new migration.
 
