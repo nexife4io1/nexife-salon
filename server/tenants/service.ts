@@ -24,6 +24,11 @@ export async function getTenant(tenantId: string): Promise<Tenant> {
   return tenant;
 }
 
+/** The salon code staff type on the attendance page is the tenant slug. Null when unknown. */
+export function findTenantBySlug(slug: string): Promise<Tenant | null> {
+  return repo.findTenantBySlug(slug);
+}
+
 export function listTenants(): Promise<Tenant[]> {
   return repo.listTenants();
 }

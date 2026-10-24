@@ -58,14 +58,52 @@ export const staff = salon.table(
     recruitmentSource: text("recruitment_source"),
     // 0 = Sunday … 6 = Saturday; null = not set.
     weeklyOffDay: smallint("weekly_off_day"),
+    // Secret used with the phone number to mark attendance from a device; unique within a tenant.
+    registrationCode: text("registration_code"),
     ...timestamps(),
   },
   (t) => [
     index("staff_tenant_idx").on(t.tenantId),
+    uniqueIndex("staff_registration_code_uq").on(t.tenantId, t.registrationCode),
     index("staff_branch_idx").on(t.branchId),
     check("staff_weekly_off_day_chk", sql`${t.weeklyOffDay} between 0 and 6`),
     check("staff_status_active_chk", sql`${t.active} = (${t.status} <> 'inactive')`),
   ],
+);
+
+/** One row per staff member per tenant-local day. `workDate` is the tenant's calendar date at check-in. */
+export const staffAttendance = salon.table(
+  "staff_attendance",
+  {
+    id: id(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    branchId: uuid("branch_id").references(() => branches.id, { onDelete: "set null" }),
+    staffId: uuid("staff_id")
+      .notNull()
+      .references(() => staff.id, { onDelete: "cascade" }),
+    workDate: date("work_date", { mode: "string" }).notNull(),
+    checkInAt: timestamp("check_in_at", { withTimezone: true }).notNull(),
+    checkOutAt: timestamp("check_out_at", { withTimezone: true }),
+    ...timestamps(),
+  },
+  (t) => [
+    uniqueIndex("staff_attendance_staff_day_uq").on(t.staffId, t.workDate),
+    index("staff_attendance_tenant_idx").on(t.tenantId),
+    check("staff_attendance_order_chk", sql`${t.checkOutAt} is null or ${t.checkOutAt} >= ${t.checkInAt}`),
+  ],
+);
+
+/** Failed device logins, used to throttle guessing. Deliberately not tenant-scoped: it is read before a tenant is known. */
+export const staffLoginAttempts = salon.table(
+  "staff_login_attempts",
+  {
+    id: id(),
+    key: text("key").notNull(),
+    attemptedAt: timestamp("attempted_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("staff_login_attempts_key_idx").on(t.key, t.attemptedAt)],
 );
 
 /** Services a staff member is qualified to perform. */

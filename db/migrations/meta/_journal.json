@@ -64,6 +64,13 @@
       "when": 1792503240815,
       "tag": "0008_billing_tip_allocations",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792838511907,
+      "tag": "0009_staff_attendance",
+      "breakpoints": true
     }
   ]
 }

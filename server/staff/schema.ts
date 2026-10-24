@@ -76,6 +76,8 @@ export type StaffProfile = StaffListItem & {
   casualLeaves: number | null;
   recruitmentSource: string | null;
   schedule: StaffSchedule;
+  /** Secret for the mobile attendance page. Managers only, same as the rest of the profile. */
+  registrationCode: string | null;
   /** Services this person performs (empty = no restriction: they can take any service their branch offers). */
   serviceIds: string[];
 };
@@ -240,6 +242,8 @@ export const createStaffInputSchema = staffInputSchema;
 export type CreateStaffInput = StaffInput;
 
 export const setStaffStatusInputSchema = z.object({ id: z.string().uuid(), status: staffStatusSchema });
+export const registrationCodeInputSchema = z.object({ id: z.string().uuid() });
+
 export type SetStaffStatusInput = z.infer<typeof setStaffStatusInputSchema>;
 
 // --- Normalised write model (service → repository) -------------------------------------------------

@@ -74,6 +74,12 @@ export async function findTenantById(tenantId: string): Promise<Tenant | null> {
   return row ?? null;
 }
 
+export async function findTenantBySlug(slug: string): Promise<Tenant | null> {
+  if (!isDatabaseConfigured()) return fixtureTenants.find((t) => t.slug === slug) ?? null;
+  const [row] = await getDb().select(tenantColumns).from(tenants).where(eq(tenants.slug, slug)).limit(1);
+  return row ?? null;
+}
+
 export async function listTenants(): Promise<Tenant[]> {
   if (!isDatabaseConfigured()) return [...fixtureTenants];
   return getDb().select(tenantColumns).from(tenants).orderBy(asc(tenants.name));
